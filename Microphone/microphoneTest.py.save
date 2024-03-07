@@ -1,0 +1,251 @@
+import pyaudio
+import wave
+
+# Constants
+FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
+CHANNELS = 1              # Number of audio channels (1 for mono)
+RATE = 44100              # Sample rate (number of samples per second)
+CHUNK = 1024              # Number of audio frames per buffer
+RECORD_SECONDS = 5        # Length of the recording in seconds
+WAVE_OUTPUT_FILENAME = "test_audio.wav"  # Output filename
+
+# Initialize pyaudio
+audio = pyaudio.PyAudio()
+
+# Start recording
+stream = audio.open(format=FORMAT, channels=CHANNELS,
+                    rate=RATE, input=True,
+                    frames_per_buffer=CHUNK)
+print("Recording...")
+frames = []
+
+for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+    data = stream.read(CHUNK)
+    frames.append(data)
+print("Finished recording.")
+
+# Stop recording
+stream.stop_stream()
+stream.close()
+audio.terminate()
+
+# Save the recorded data as a WAV file
+wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+wf.setnchannels(CHANNELS)
+wf.setsampwidth(audio.get_sample_size(FORMAT))
+wf.setframerate(RATE)
+wf.writeframes(b''.join(frames))
+wf.close()
+
+# Playback
+print("Playing back...")
+wf = wave.open(WAVE_OUTPUT_FILENAME, 'rb')
+stream = audio.open(format=audio.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+data = wf.readframes(CHUNK)
+while data:
+    stream.write(data)
+    data = wf.readframes(CHUNK)
+
+stream.stop_stream()
+stream.close()
+audio.terminate()
+print("Playback finished.")
+
+##end
+
+
+
+#start
+
+#!/usr/bin/env python
+import pyaudio
+from numpy import zeros, linspace, short, fromstring, hstack, transpose, log, log2
+from scipy.fft import fft
+from time import sleep
+
+
+# Volume Sensitivity, 0.01: Extremely Sensitive, may give false alarms
+# 0.1: Probably Ideal volume
+# 1: Poorly sensitive, will only go off for relatively loud sounds
+SENSITIVITY = 0.1
+TONE = 300  # Bandwidth to eliminate noise
+BANDWIDTH = 30
+beeplength = 3
+alarmlength = 5
+resetlength = 10
+clearlength = 10
+debug = False
+RELATIVE_FREQ = 440.0
+NUM_SAMPLES = 2048
+SAMPLING_RATE = 44100
+pa = pyaudio.PyAudio()
+_stream = pa.open(format=pyaudio.paInt16, channels=1, rate=SAMPLING_RATE,
+                 input=True, frames_per_buffer=NUM_SAMPLES)
+
+
+print("Tuner working. Press CTRL-C to quit.")
+#notes in cents
+Note_E = 5
+Note_A = 0
+Note_D = 7
+Note_G = 2
+Note_B = 10
+Note_E4= 5
+
+
+
+
+blipcount = 0
+beepcount = 0
+resetcount = 0
+clearcount = 0
+alarm = False
+frequencyoutput = True
+
+
+while True:
+   while _stream.get_read_available() < NUM_SAMPLES: sleep(0.01)
+   audio_data = fromstring(_stream.read(
+       _stream.get_read_available(), exception_on_overflow=False), dtype=short)[-NUM_SAMPLES:]
+   # Each data point is a signed 16 bit number, so we can normalize by dividing by 32768 (2^15)
+   normalized_data = audio_data / 32768.0
+   intensity = abs(fft(normalized_data))[:NUM_SAMPLES//2]
+   frequencies = linspace(0.0, float(SAMPLING_RATE)//2, num=NUM_SAMPLES//2)
+   if frequencyoutput:
+       which = intensity[1:].argmax() + 1
+       # Use quadratic interpolation around the max
+       if which != len(intensity)-1:
+           y0, y1, y2 = log(intensity[which-1:which+2:])
+           x1 = (y2 - y0) * 0.5 / (2 * y1 - y2 - y0)
+           # find the frequency and output it
+           thefreq = (which+x1)*SAMPLING_RATE/NUM_SAMPLES
+       else:
+           thefreq = which*SAMPLING_RATE/NUM_SAMPLES
+#       print("The freq is %f Hz." % (thefreq))
+
+       adjfreq = thefreq
+       if (adjfreq != -9999):
+       #print "RAW FREQ:", adjfreq
+           adjfreq = 1200 * log2(RELATIVE_FREQ/adjfreq)/100
+           adjfreq = adjfreq % 12
+       #print adjfreq
+       #Case statements
+           if abs(adjfreq - Note_E4) < 1:
+               #In Tune E4
+               if abs(adjfreq - Note_E4) < 0.1  :
+                   print("You played an E4!")
+               #Sharp E4
+               elif (adjfreq - Note_E4) < 0  :
+                   print("You are sharp E4!")
+               #Flat E4
+               elif (adjfreq - Note_E4) > 0  :
+                   print("You are flat E4!")
+           if abs(adjfreq - Note_E) < 1:
+               #In Tune E
+               if abs(adjfreq - Note_E) < 0.1  :
+                   print("You played an E!")
+               #Sharp E
+               elif (adjfreq - Note_E) < 0  :
+                   print("You are sharp E!")
+               #Flat E
+               elif (adjfreq - Note_E) > 0  :
+                   print("You are flat E!")
+           if abs(adjfreq - Note_A) < 1:
+               #In Tune A
+               if abs(adjfreq - Note_A) < 0.1 :
+                   print("You played an A!")
+               #Sharp A
+               elif (adjfreq - Note_A) < 0  :
+                   print("You are sharp A!")
+               #Flat A
+               elif (adjfreq - Note_A) > 0  :
+                   print("You are flat A!")
+                   
+           if abs(adjfreq - Note_B) < 1:
+   
+               #In Tune B
+               if abs(adjfreq - Note_B) < 0.1  :
+                   print("You played an B!")
+               #Sharp B
+               elif (adjfreq - Note_B) < 0  :
+                   print("You are sharp B!")
+               #Flat B
+               elif (adjfreq - Note_B) > 0  :
+                   print("You are flat B!")
+           if abs(adjfreq - Note_G) < 1:
+               
+               #In Tune G
+               if abs(adjfreq - Note_G) < 0.1  :
+                   print("You played an G!")
+               #Sharp G
+               elif (adjfreq - Note_G) < 0  :
+                   print("You are sharp G!")
+               #Flat G
+               elif (adjfreq - Note_G) > 0  :
+                   print("You are flat G!")
+                   
+           if abs(adjfreq - Note_D) < 1:
+               
+               #In Tune D
+               if abs(adjfreq - Note_D) < 0.1  :
+                   print("You played an D!")
+               #Sharp E
+               elif (adjfreq - Note_D) < 0  :
+                   print("You are sharp D!")
+       import pyaudio
+import wave
+
+# Constants
+FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
+CHANNELS = 1              # Number of audio channels (1 for mono)
+RATE = 44100              # Sample rate (number of samples per second)
+CHUNK = 1024              # Number of audio frames per buffer
+RECORD_SECONDS = 5        # Length of the recording in seconds
+WAVE_OUTPUT_FILENAME = "test_audio.wav"  # Output filename
+
+# Initialize pyaudio
+audio = pyaudio.PyAudio()
+
+# Start recording
+stream = audio.open(format=FORMAT, channels=CHANNELS,
+                    rate=RATE, input=True,
+                    frames_per_buffer=CHUNK)
+print("Recording...")
+frames = []
+
+for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+    data = stream.read(CHUNK)
+    frames.append(data)
+print("Finished recording.")
+
+# Stop recording
+stream.stop_stream()
+stream.close()
+audio.terminate()
+
+# Save the recorded data as a WAV file
+wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+wf.setnchannels(CHANNELS)
+wf.setsampwidth(audio.get_sample_size(FORMAT))
+wf.setframerate(RATE)
+wf.writeframes(b''.join(frames))
+wf.close()
+
+# Playback
+print("Playing back...")
+wf = wave.open(WAVE_OUTPUT_FILENAME, 'rb')
+stream = audio.open(format=audio.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+data = wf.readframes(CHUNK)
+while data:
+    stream.write(data)
+    data = wf.readframes(CHUNK)
+
+stream.stop_stream()
+stream.close()
+aud
