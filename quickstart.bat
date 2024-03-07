@@ -1,0 +1,6 @@
+@echo off
+echo Creating virtual environment...
+py -3 -m venv .venv
+echo Installing requirements to virtual environment...
+start /WAIT /B .venv/Scripts/python -m pip install -r requirements.txt
+echo Done! Type .venv/Scripts/activate to activate the virtual environment.
