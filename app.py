@@ -100,12 +100,8 @@ async def handler(websocket):
 	finally:
 		CLIENTS.remove(client)
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-localhost_pem = pathlib.Path(__file__).with_name("localhost.pem")
-ssl_context.load_verify_locations(localhost_pem)
-
 async def main():
-	async with websockets.serve(handler, "", 8001, ssl=ssl_context):
+	async with websockets.serve(handler, "", 8001):
 		await asyncio.Future()
 		
 
