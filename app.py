@@ -5,6 +5,8 @@ import sys
 import websockets
 import socket
 import requests
+import pathlib
+import ssl
 
 this_module = sys.modules[__name__]
 
@@ -98,8 +100,12 @@ async def handler(websocket):
 	finally:
 		CLIENTS.remove(client)
 
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+localhost_pem = pathlib.Path(__file__).with_name("localhost.pem")
+ssl_context.load_verify_locations(localhost_pem)
+
 async def main():
-	async with websockets.serve(handler, "", 8001):
+	async with websockets.serve(handler, "", 8001, ssl=ssl_context):
 		await asyncio.Future()
 		
 
@@ -114,7 +120,7 @@ def get_local_ip():
         s.close()
     return IP
 
-BaseURL = "192.168.0.10:5000"
+BaseURL = "172.24.57.90:5000"
 
 if __name__ == "__main__":
 	payload = {
