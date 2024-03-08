@@ -3,6 +3,8 @@ import json
 import sys
 
 import websockets
+import socket
+import requests
 
 this_module = sys.modules[__name__]
 
@@ -96,10 +98,37 @@ async def handler(websocket):
 	finally:
 		CLIENTS.remove(client)
 
-
 async def main():
 	async with websockets.serve(handler, "", 8001):
 		await asyncio.Future()
+		
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        IP = s.getsockname()[0]
+    except:
+        IP = None
+    finally:
+        s.close()
+    return IP
+
+BaseURL = "192.168.0.10:5000"
 
 if __name__ == "__main__":
-	asyncio.run(main())
+	payload = {
+		"devicename": "test_device",
+		"password": "test_password",
+	}
+
+	with requests.Session() as session:
+		session.post("https://" + BaseURL + "/enable_device", data=payload, verify=False)
+
+	try:
+		asyncio.run(main())
+	except:
+		with requests.Session() as session:
+			session.post("https://" + BaseURL + "/disable_device", data=payload, verify=False)
+
+ 
