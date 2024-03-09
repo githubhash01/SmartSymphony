@@ -5,8 +5,6 @@ import sys
 import websockets
 import socket
 import requests
-import pathlib
-import ssl
 
 this_module = sys.modules[__name__]
 
@@ -60,6 +58,7 @@ def cmd_listen(client, enable):
 
 def create_error(reason):
 	return create_message(None, "error", reason)
+			
 	
 CLIENTS = set()
 
@@ -71,7 +70,8 @@ async def send(websocket, message):
 
 def broadcast(message):
 	for client in CLIENTS:
-		asyncio.create_task(send(client.get_websocket(), message))
+		if client.is_listening():
+			asyncio.create_task(send(client.get_websocket(), message))
 
 async def handler(websocket):
 	client = Client(websocket)
@@ -84,7 +84,7 @@ async def handler(websocket):
 				error = create_error("message has no cmd_name")
 				await send(client.get_websocket(), error)
 				continue
-			cmd_id = message["cmd_id"]
+			cmd_id = message.get("cmd_id")
 			cmd_name = message["cmd_name"]
 			cmd_data = message["cmd_data"]
 			try:
@@ -100,12 +100,19 @@ async def handler(websocket):
 	finally:
 		CLIENTS.remove(client)
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-localhost_pem = pathlib.Path(__file__).with_name("localhost.pem")
-ssl_context.load_verify_locations(localhost_pem)
+async def measure():
+	playing = False
+	while True:
+		if playing:
+			broadcast(create_message(None, "start", "C4"))
+		else:
+			broadcast(create_message(None, "end", "C4"))
+		playing = not playing
+		await asyncio.sleep(1.0)
 
 async def main():
-	async with websockets.serve(handler, "", 8001, ssl=ssl_context):
+	asyncio.create_task(measure())
+	async with websockets.serve(handler, "", 8001):
 		await asyncio.Future()
 		
 
@@ -120,7 +127,7 @@ def get_local_ip():
         s.close()
     return IP
 
-BaseURL = "172.24.57.90:5000"
+BaseURL = "127.0.0.1:5000"
 
 if __name__ == "__main__":
 	payload = {
