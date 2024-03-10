@@ -128,7 +128,7 @@ async def main():
 	async with websockets.serve(handler, "", 8001):
 		await asyncio.Future()
 
-BaseURL = "172.24.60.28:5000"
+BaseURL = "http://192.168.0.10:5000"
 
 if __name__ == "__main__":
 	payload = {
@@ -137,12 +137,12 @@ if __name__ == "__main__":
 	}
 
 	with requests.Session() as session:
-		session.post("http://" + BaseURL + "/enable_device", data=payload)
+		session.post(BaseURL + "/enable_device", data=payload)
 
 	try:
 		asyncio.run(main())
 	except:
 		with requests.Session() as session:
-			session.post("http://" + BaseURL + "/disable_device", data=payload)
+			session.post(BaseURL + "/disable_device", data=payload)
 
  
