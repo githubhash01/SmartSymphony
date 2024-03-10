@@ -5,8 +5,6 @@ import sys
 import websockets
 import socket
 import requests
-import pathlib
-import ssl
 
 this_module = sys.modules[__name__]
 
@@ -60,6 +58,7 @@ def cmd_listen(client, enable):
 
 def create_error(reason):
 	return create_message(None, "error", reason)
+			
 	
 CLIENTS = set()
 
@@ -71,7 +70,8 @@ async def send(websocket, message):
 
 def broadcast(message):
 	for client in CLIENTS:
-		asyncio.create_task(send(client.get_websocket(), message))
+		if client.is_listening():
+			asyncio.create_task(send(client.get_websocket(), message))
 
 async def handler(websocket):
 	client = Client(websocket)
@@ -84,7 +84,7 @@ async def handler(websocket):
 				error = create_error("message has no cmd_name")
 				await send(client.get_websocket(), error)
 				continue
-			cmd_id = message["cmd_id"]
+			cmd_id = message.get("cmd_id")
 			cmd_name = message["cmd_name"]
 			cmd_data = message["cmd_data"]
 			try:
@@ -100,25 +100,25 @@ async def handler(websocket):
 	finally:
 		CLIENTS.remove(client)
 
+async def measure():
+	playing = False
+	while True:
+		if playing:
+			broadcast(create_message(None, "start", "C4"))
+		else:
+			broadcast(create_message(None, "end", "C4"))
+		playing = not playing
+		await asyncio.sleep(1.0)
+
 async def main():
+	asyncio.create_task(measure())
 	async with websockets.serve(handler, "", 8001):
 		await asyncio.Future()
-		
 
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(("8.8.8.8", 80))
-        IP = s.getsockname()[0]
-    except:
-        IP = None
-    finally:
-        s.close()
-    return IP
-
-BaseURL = "172.24.57.90:5000"
+BaseURL = "172.24.60.28:5000"
 
 if __name__ == "__main__":
+	print("TEST")
 	payload = {
 		"devicename": "test_device",
 		"password": "test_password",
