@@ -43,10 +43,24 @@ def cmd_is_playing_note(client, note):
 	print(note)
 	return False
 	
-def cmd_load_midi(client, midi):
-	# TODO: This function should load the MIDI file 'midi' to be used
-	# with the actuators and lightbar
-	print(midi)
+def cmd_play_note(client, info):
+	# TODO: This function plays the note specified in 'info', either
+	# on the actuators or lightbar, specified in 'info'. A play length
+	# also provided in info
+	print(info)
+	
+def cmd_load(client, info):
+	# TODO: This function should load a MIDI file to be used
+	# with the actuators and lightbar. 'info' should contain the midi
+	# file, which hand to load it into, and whether to play it with
+	# actuators or lightbar
+	print(info)
+	return True
+	
+def cmd_play(client, start):
+	# TODO: play the midi on the lightbar, return True IFF successful
+	# false otherwise
+	print(play)
 	return True
 
 def cmd_listen(client, enable):
@@ -58,7 +72,6 @@ def cmd_listen(client, enable):
 
 def create_error(reason):
 	return create_message(None, "error", reason)
-			
 	
 CLIENTS = set()
 
@@ -118,19 +131,18 @@ async def main():
 BaseURL = "172.24.60.28:5000"
 
 if __name__ == "__main__":
-	print("TEST")
 	payload = {
 		"devicename": "test_device",
 		"password": "test_password",
 	}
 
 	with requests.Session() as session:
-		session.post("https://" + BaseURL + "/enable_device", data=payload, verify=False)
+		session.post("http://" + BaseURL + "/enable_device", data=payload)
 
 	try:
 		asyncio.run(main())
 	except:
 		with requests.Session() as session:
-			session.post("https://" + BaseURL + "/disable_device", data=payload, verify=False)
+			session.post("http://" + BaseURL + "/disable_device", data=payload)
 
  
