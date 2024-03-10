@@ -114,18 +114,6 @@ async def main():
 	asyncio.create_task(measure())
 	async with websockets.serve(handler, "", 8001):
 		await asyncio.Future()
-		
-
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(("8.8.8.8", 80))
-        IP = s.getsockname()[0]
-    except:
-        IP = None
-    finally:
-        s.close()
-    return IP
 
 BaseURL = "127.0.0.1:5000"
 
