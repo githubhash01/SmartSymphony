@@ -3,7 +3,6 @@ import json
 import sys
 
 import websockets
-import socket
 import requests
 
 this_module = sys.modules[__name__]
@@ -60,7 +59,7 @@ def cmd_load(client, info):
 def cmd_play(client, start):
 	# TODO: play the midi on the lightbar, return True IFF successful
 	# false otherwise
-	print(play)
+	print(start)
 	return True
 
 def cmd_listen(client, enable):
@@ -128,21 +127,26 @@ async def main():
 	async with websockets.serve(handler, "", 8001):
 		await asyncio.Future()
 
+# Ideally, this would be something like
+# https://smartsymphony.com, rather than an IP with a port
 BaseURL = "http://192.168.0.10:5000"
 
 if __name__ == "__main__":
-	payload = {
-		"devicename": "test_device",
-		"password": "test_password",
-	}
+	with open("credentials.txt") as credentials_file: 
+		credentials_contents = credentials_file.read()
+		credentials = json.loads(credentials_contents)
+	
+	assert "devicename" in credentials
+	assert "password" in credentials
+	assert len(credentials) == 2
 
 	with requests.Session() as session:
-		session.post(BaseURL + "/enable_device", data=payload)
+		session.post(BaseURL + "/enable_device", data=credentials)
 
 	try:
 		asyncio.run(main())
 	except:
 		with requests.Session() as session:
-			session.post(BaseURL + "/disable_device", data=payload)
+			session.post(BaseURL + "/disable_device", data=credentials)
 
  
