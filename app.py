@@ -53,7 +53,7 @@ def cmd_play_note(client, info):
 	
 def cmd_load(client, info):
 	with open("test.mid", "wb") as f:
-		f.write(info)
+		f.write(info.encode('utf-8'))
 	asyncio.create_task(test.playMidi("test.mid", 0.75))
 	return True
 	
