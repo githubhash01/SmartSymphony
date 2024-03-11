@@ -107,8 +107,7 @@ async def handler(websocket):
 			except:
 				error = create_error(f"error calling {cmd_name}")
 				await send(client.get_websocket(), error)
-				continue 
-			broadcast(create_error("TEST"))
+				continue
 	finally:
 		CLIENTS.remove(client)
 
@@ -128,7 +127,10 @@ async def main():
 		await asyncio.Future()
 
 # Ideally, this would be something like
-# https://smartsymphony.com, rather than an IP with a port
+# https://smartsymphony.com, rather than
+# an IP with a port. make sure to change
+# it when you boot up the website to the
+# website IP!
 BaseURL = "http://192.168.0.10:5000"
 
 if __name__ == "__main__":
@@ -138,7 +140,8 @@ if __name__ == "__main__":
 	
 	assert "devicename" in credentials
 	assert "password" in credentials
-	assert len(credentials) == 2
+	assert "key" in credentials
+	assert len(credentials) == 3
 
 	with requests.Session() as session:
 		session.post(BaseURL + "/enable_device", data=credentials)
@@ -148,5 +151,3 @@ if __name__ == "__main__":
 	except:
 		with requests.Session() as session:
 			session.post(BaseURL + "/disable_device", data=credentials)
-
- 
