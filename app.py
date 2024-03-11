@@ -9,6 +9,7 @@ from LED import LEDStrip
 this_module = sys.modules[__name__]
 
 test = LEDStrip(20) # brightness set to 20/255
+test.begin()
 
 class Client:
 	def __init__(self, websocket):
@@ -52,8 +53,9 @@ def cmd_play_note(client, info):
 	print(info)
 	
 def cmd_load(client, info):
+	decoded = base64.b64decode(info)
 	with open("test.mid", "wb") as f:
-		f.write(info.encode('utf-8'))
+		f.write(decoded)
 	asyncio.create_task(test.playMidi("test.mid", 0.75))
 	return True
 	
