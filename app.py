@@ -1,9 +1,9 @@
 import asyncio
 import json
 import sys
-
 import websockets
 import requests
+import base64
 
 this_module = sys.modules[__name__]
 
@@ -49,11 +49,7 @@ def cmd_play_note(client, info):
 	print(info)
 	
 def cmd_load(client, info):
-	# TODO: This function should load a MIDI file to be used
-	# with the actuators and lightbar. 'info' should contain the midi
-	# file, which hand to load it into, and whether to play it with
-	# actuators or lightbar
-	print(info)
+	print(len(info) * 8)
 	return True
 	
 def cmd_play(client, start):
@@ -131,7 +127,7 @@ async def main():
 # an IP with a port. make sure to change
 # it when you boot up the website to the
 # website IP!
-BaseURL = "http://192.168.0.10:5000"
+BaseURL = "http://172.24.62.53:5000"
 
 if __name__ == "__main__":
 	with open("credentials.txt") as credentials_file: 
@@ -142,10 +138,9 @@ if __name__ == "__main__":
 	assert "password" in credentials
 	assert "key" in credentials
 	assert len(credentials) == 3
-
+	
 	with requests.Session() as session:
 		session.post(BaseURL + "/enable_device", data=credentials)
-
 	try:
 		asyncio.run(main())
 	except:
