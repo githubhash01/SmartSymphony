@@ -2,7 +2,9 @@
 A python script that takes a midi file and converts it to a timeline of notes being played
 """
 from Keys import Key, KeyEvent
-import mido
+import mido 
+
+MIDI_FILE = 'MidiFiles/Marriagedamour.mid'
 
 def parseTrack(track):
     timeline = []
@@ -31,7 +33,18 @@ def parseMidi(midi_file):
         wait_times.append(wait_time)
     wait_times.append(0)  # no wait time for the last event
     combined_timeline = [(time, wait, event) for (time, event), wait in zip(combined_timeline, wait_times)]
-    return combined_timeline
+    return combined_timeline    
+
+
+def main():
+    timeline = parseMidi(MIDI_FILE)
+    for time, wait, event in timeline:
+        print(time, wait, 'ON' if event.event_type else 'OFF', event.key.note, event.key.led_num)
+        
+if __name__ == '__main__':
+    main()
+ 
+
 
 
 
