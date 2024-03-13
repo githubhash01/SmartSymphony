@@ -3,6 +3,7 @@ class Key:
         self.key_num = key_num
         self.note = self.get_note()
         self.led_num = self.get_led()
+        self.actuator = self.get_actuator()
 
     def get_note(self):
         note = self.key_num % 12
@@ -42,6 +43,12 @@ class Key:
             return octave_6_dict[note] - 2
         else:
             return -1
+    
+    def get_actuator(self):
+        note_to_actuator_dict = {'C' : 12, 'D' : 5, 'E' : 16, 'F' : 18, 'G' : 22, 'A' : 24, 'B' : 26}
+        note = self.note[:-1]
+        return note_to_actuator_dict.get(note)
+
 
 class KeyEvent:
 

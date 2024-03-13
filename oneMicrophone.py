@@ -40,6 +40,7 @@ class Tuner():
         self.buffer = queue.Queue()
         self.running = True
         self.results = deque()
+        self.mapped_results = {}
 
     def get_frequency_from_samples_right(self,audio_samples):
         frequencies = []
@@ -82,7 +83,7 @@ class Tuner():
             else:
                 if (zipped[i][0] - zipped[i-1][0] > Values.Frequency_Difference_Threshold):
                    continue
-                current_group.append(zipped[i])
+s                current_group.append(zipped[i])
         groups.append(current_group)  # Add the last group
 
     # Calculate average frequency and intensity for each group
@@ -196,6 +197,7 @@ class Tuner():
                                 t = time.time()
                                 print(t)
                                 self.results.append((detected_note,t))
+                                self.mapped_results
                                 temp = []
                                 started = False
                                 count = 0
