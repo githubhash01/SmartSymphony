@@ -1,75 +1,49 @@
-#! /usr/bin/env python
-
-# Use pyaudio to open the microphone and run aubio.pitch on the stream of
-# incoming samples. If a filename is given as the first argument, it will
-# record 5 seconds of audio to this location. Otherwise, the script will
-# run until Ctrl+C is pressed.
-
-# Examples:
-#    $ ./python/demos/demo_pyaudio.py
-#    $ ./python/demos/demo_pyaudio.py /tmp/recording.wav
-
 import pyaudio
 import sys
 import numpy as np
 import aubio
+from Keys import Key
 
-# initialise pyaudio
-p = pyaudio.PyAudio()
-
-# open stream
-buffer_size = 1024
-pyaudio_format = pyaudio.paFloat32
-n_channels = 1
-samplerate = 44100
-stream = p.open(format=pyaudio_format,
-                channels=n_channels,
-                rate=samplerate,
-                input=True,
-                frames_per_buffer=buffer_size)
-
-if len(sys.argv) > 1:
-    # record 5 seconds
-    output_filename = sys.argv[1]
-    record_duration = 5 # exit 1
-    outputsink = aubio.sink(sys.argv[1], samplerate)
-    total_frames = 0
-else:
-    # run forever
-    outputsink = None
-    record_duration = None
-
-# setup pitch
-tolerance = 0.8
-win_s = 4096 # fft size
-hop_s = buffer_size # hop size
-pitch_o = aubio.pitch("default", win_s, hop_s, samplerate)
-pitch_o.set_unit("midi")
-pitch_o.set_tolerance(tolerance)
-
-print("*** starting recording")
-while True:
-    try:
-        audiobuffer = stream.read(buffer_size)
+class Microphone:
+    def __init__(self):
+        self.p = pyaudio.PyAudio()
+        self.stream = self.p.open(format=pyaudio.paFloat32,
+                            channels=1,
+                            rate=44100,
+                            input=True,
+                            frames_per_buffer=1024,
+                            start=False)
+        self.pitch_o = aubio.pitch("default", 4096, 1024, 44100)
+        self.pitch_o.set_unit("midi")
+        self.pitch_o.set_tolerance(0.8)
+        self.running = False
+        self.note = None
+        self.notes = set()
+    
+    def __del__(self):
+        self.stream.stop_stream()
+        self.stream.close()
+        self.p.terminate()
+    
+    def start(self):
+        self.stream.start_stream()
+        self.running = True
+    
+    def stop(self):
+        self.stream.stop_stream()
+        self.running = False
+    
+    def get_notes(self):
+        return self.notes
+    
+    def calculate_notes(self):
+        if not self.running:
+            raise Exception("Trying to calculate note without starting mic, aborting...")
+        audiobuffer = self.stream.read(1024, exception_on_overflow=False)
         signal = np.fromstring(audiobuffer, dtype=np.float32)
 
-        pitch = pitch_o(signal)[0]
-        confidence = pitch_o.get_confidence()
-
-        print("{} / {}".format(pitch,confidence))
-
-        if outputsink:
-            outputsink(signal, len(signal))
-
-        if record_duration:
-            total_frames += len(signal)
-            if record_duration * samplerate < total_frames:
-                break
-    except KeyboardInterrupt:
-        print("*** Ctrl+C pressed, exiting")
-        break
-
-print("*** done recording")
-stream.stop_stream()
-stream.close()
-p.terminate()
+        key_num = int(np.round(self.pitch_o(signal)[0]))
+        self.notes.clear()
+        if key_num != 0:
+            key = Key(key_num).note
+            self.notes.add(key)

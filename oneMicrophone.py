@@ -83,7 +83,7 @@ class Tuner():
             else:
                 if (zipped[i][0] - zipped[i-1][0] > Values.Frequency_Difference_Threshold):
                    continue
-s                current_group.append(zipped[i])
+                current_group.append(zipped[i])
         groups.append(current_group)  # Add the last group
 
     # Calculate average frequency and intensity for each group
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         tuner.stop()
         print("Program stopped.")
-=======
+"""
 import pyaudio
 from numpy import zeros, linspace, short, fromstring, hstack, transpose, log, log2, abs, mean
 from scipy.fft import fft
@@ -573,3 +573,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         tuner.stop()
         print("Program stopped.")
+"""
