@@ -5,7 +5,7 @@ import websockets
 import requests
 import base64
 from LED import LEDStrip
-from oneMicrophone import Tuner
+#from oneMicrophone import Tuner
 from Demo2Song import Actuators
 
 this_module = sys.modules[__name__]
@@ -13,7 +13,7 @@ this_module = sys.modules[__name__]
 led_strip = LEDStrip(20) # brightness set to 20/255
 led_strip.begin()
 
-actuators = Actuators()
+#actuators = Actuators()
 
 #tuner = Tuner()
 #tuner.start()
@@ -64,7 +64,7 @@ def cmd_load(client, info):
 	with open("test.mid", "wb") as f:
 		f.write(decoded)
 	print("TEST")
-	asyncio.create_task(actuators.play("test.mid", 0.75))
+	asyncio.create_task(led_strip.playMidi("test.mid", 0.75))
 	return True
 	
 def cmd_play(client, start):
@@ -138,7 +138,7 @@ async def main():
 # an IP with a port. make sure to change
 # it when you boot up the website to the
 # website IP!
-BaseURL = "http://172.24.63.225:5000"
+BaseURL = "http://172.24.48.183:5000"
 
 if __name__ == "__main__":
 	with open("credentials.txt") as credentials_file: 

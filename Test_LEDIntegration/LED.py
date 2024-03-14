@@ -1,4 +1,4 @@
-import asyncio
+import time
 from rpi_ws281x import *
 from MidiProcessor import parseMidi
 
@@ -9,7 +9,7 @@ class LEDStrip:
     OFF = Color(0, 0, 0)
 
     def __init__(self, brightness):
-        self.LED_COUNT = 60
+        self.LED_COUNT = 144
         self.LED_PIN = 18 # must be PWM
         self.LED_FREQ_HZ = 800000
         self.DMA = 10
@@ -27,12 +27,11 @@ class LEDStrip:
     def begin(self):
         self.strip.begin()
 
-    async def colorWipe(self, color=GREEN, wait_ms=50):
+    def colorWipe(self, color=GREEN, wait_ms=50):
         for i in range(self.LED_COUNT):
             self.strip.setPixelColor(i, color)
             self.strip.show()
-            await asyncio.sleep(wait_ms / 1000.0)
-            #time.sleep(wait_ms/1000.0)
+            time.sleep(wait_ms/1000.0)
         self.turnOffStrip()
 
     def playSet(self, led_index):
@@ -68,7 +67,7 @@ class LEDStrip:
             self.strip.setPixelColor(i, LEDStrip.OFF)
         self.strip.show()
 
-    async def playMidi(self, midi_file, speed=1.0):
+    def playMidi(self, midi_file, speed=1.0):
         timeline = parseMidi(midi_file)
         for event_time, wait, event in timeline:
             print(event_time, wait, 'ON' if event.event_type else 'OFF', event.key.note, event.key.led_num)
@@ -77,5 +76,18 @@ class LEDStrip:
             else:
                 self.switchOffLED(event.key.led_num)
             self.show()
-            await asyncio.sleep(wait / (speed * 1000))
-            #time.sleep(wait/(speed*1000))  # sleep for the duration of the note
+            time.sleep(wait/(speed*1000))  # sleep for the duration of the note
+
+
+# demoing the LEDStrip class with a midi file
+LEDStrip = LEDStrip(50) # brightness set to 20/255
+LEDStrip.begin()
+LEDStrip.colorWipe()
+
+"""
+MIDI_FILE = 'Marriagedamour.mid'
+LEDStrip.begin()
+LEDStrip.colorWipe()
+LEDStrip.playMidi(MIDI_FILE, 0.12)  
+"""
+

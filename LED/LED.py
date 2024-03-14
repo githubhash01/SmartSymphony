@@ -81,8 +81,11 @@ class LEDStrip:
 
 # demoing the LEDStrip class with a midi file
 LEDStrip = LEDStrip(20) # brightness set to 20/255
+LEDStrip.colorWipe()
+
+"""
 MIDI_FILE = 'Marriagedamour.mid'
 LEDStrip.begin()
 LEDStrip.colorWipe()
 LEDStrip.playMidi(MIDI_FILE, 0.12)  
-
+"""
