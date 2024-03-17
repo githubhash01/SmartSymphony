@@ -51,7 +51,6 @@ class Key:
 
 
 class KeyEvent:
-
     def __init__(self, key, event_type):
         self.key = key
         self.event_type = event_type

@@ -1,6 +1,6 @@
 import time
 import pygame
-from MidiProcessor import parseMidi
+from timeline import parseMidi
 
 DIRECTORY = 'audio'
 #MIDI_FILE = 'HappyBirthday.mid'

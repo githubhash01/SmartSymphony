@@ -4,20 +4,22 @@ import sys
 import websockets
 import requests
 import base64
-from LED import LEDStrip
+import io
+from lightstrip import Lightstrip
+from actuators import Actuators
 from microphone import Microphone
-from Demo2Song import Actuators
+from output import Output
 
 this_module = sys.modules[__name__]
 
-led_strip = LEDStrip(20) # brightness set to 20/255
-led_strip.begin()
+output = Output()
 
-#actuators = Actuators()
+lightstrip = Lightstrip(20) # brightness set to 20/255
+
+actuators = Actuators()
 
 microphone = Microphone()
 microphone.start()
-#tuner.start()
 
 class Client:
     def __init__(self, websocket):
@@ -60,19 +62,38 @@ def cmd_play_note(client, info):
     # also provided in info
     print(info)
     
-def cmd_load(client, info):
-    decoded = base64.b64decode(info)
-    with open("test.mid", "wb") as f:
-        f.write(decoded)
-    print("TEST")
-    asyncio.create_task(led_strip.playMidi("test.mid", 0.75))
-    return True
+def cmd_set_speed(client, speed):
+    output.set_speed(speed)
     
-def cmd_play(client, start):
-    # TODO: play the midi on the lightbar, return True IFF successful
-    # false otherwise
-    print(start)
-    return True
+def cmd_set_time(client, time):
+    output.seek(time)
+    
+def cmd_set_play(client, start):
+    if start:
+        return output.play()
+    return output.stop()
+    
+def cmd_set_hardware(client, info):
+    info = json.loads(info)
+    if info["hardware"] == "lightstrip":
+        hardware = lightstrip
+    elif info["hardware"] == "actuators":
+        hardware = actuators
+    if info["hand"] == "left":
+        output.set_left_hand_hardware(hardware)
+    elif info["hand"] == "right":
+        output.set_right_hand_hardware(hardware)
+    
+def cmd_set_midi(client, info):
+    info = json.loads(info)
+    print(info["midi"])
+    midi_file = base64.b64decode(info["midi"])
+    with open("input_midi.mid", "wb") as f:
+        f.write(midi_file)
+    if info["hand"] == "left":
+        output.set_left_hand_midi("input_midi.mid")
+    elif info["hand"] == "right":
+        output.set_right_hand_midi("input_midi.mid")
 
 # TODO: HACK!!! Fix this
 num_listening = 0
@@ -123,7 +144,8 @@ async def handler(websocket):
                 result_data = cmd(client, cmd_data)
                 result = create_message(cmd_id, cmd_name, result_data)
                 await send(client.get_websocket(), result)
-            except:
+            except Exception as e:
+                print(e)
                 error = create_error(f"error calling {cmd_name}")
                 await send(client.get_websocket(), error)
                 continue
@@ -156,7 +178,7 @@ async def main():
 # an IP with a port. make sure to change
 # it when you boot up the website to the
 # website IP!
-BaseURL = "http://172.24.47.44:5000"
+BaseURL = "http://192.168.0.10:5000"
 
 if __name__ == "__main__":
     with open("credentials.txt") as credentials_file: 

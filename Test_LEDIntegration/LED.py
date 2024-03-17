@@ -1,6 +1,6 @@
 import time
 from rpi_ws281x import *
-from MidiProcessor import parseMidi
+from timeline import parseMidi
 
 class LEDStrip:
 

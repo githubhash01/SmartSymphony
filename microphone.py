@@ -2,7 +2,7 @@ import pyaudio
 import sys
 import numpy as np
 import aubio
-from Keys import Key
+from keys import Key
 
 class Microphone:
     def __init__(self):

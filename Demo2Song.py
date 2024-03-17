@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import time
 import threading  # 导入线程库
 import asyncio
-from MidiProcessor import parseMidi
+from timeline import parseMidi
 
 GPIO.setmode(GPIO.BCM)  # 设置GPIO编号模式为BCM
 

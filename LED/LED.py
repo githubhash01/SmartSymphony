@@ -1,6 +1,5 @@
 import time
 from rpi_ws281x import *
-from MidiProcessor import parseMidi
 
 class LEDStrip:
 
@@ -67,8 +66,9 @@ class LEDStrip:
             self.strip.setPixelColor(i, LEDStrip.OFF)
         self.strip.show()
 
-    def playMidi(self, midi_file, speed=1.0):
-        timeline = parseMidi(midi_file)
+    def playMidi(self, timeline):
+        while timeline.playing():
+            
         for event_time, wait, event in timeline:
             print(event_time, wait, 'ON' if event.event_type else 'OFF', event.key.note, event.key.led_num)
             if event.event_type == 1:
