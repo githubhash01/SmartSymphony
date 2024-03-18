@@ -6,7 +6,7 @@ import requests
 import base64
 import urllib
 from lightstrip import Lightstrip
-from actuators import Actuators
+#from actuators import Actuators
 from microphone import Microphone
 from output import Output
 
@@ -17,11 +17,11 @@ this_module = sys.modules[__name__]
 # an IP with a port. make sure to change
 # it when you boot up the website to the
 # website IP!
-BaseURL = "http://192.168.0.10:5000"
+BaseURL = "http://172.24.49.91:5000"
 
 output = Output()
 lightstrip = Lightstrip(20) # brightness set to 20/255
-actuators = Actuators()
+#actuators = Actuators()
 
 microphone = Microphone()
 
@@ -108,7 +108,7 @@ def cmd_set_hardware(client, info):
     if info["hardware"] == "lightstrip":
         hardware = lightstrip
     elif info["hardware"] == "actuators":
-        hardware = actuators
+        hardware = None #actuators
     if info["hand"] == "left":
         output.set_left_hand_hardware(hardware)
     elif info["hand"] == "right":
@@ -150,6 +150,7 @@ async def handler(websocket, path):
     with requests.Session() as session:
         valid = session.post(BaseURL + "/auth_user", data=auth_user).json()
     if valid:
+        print("IN")
         client = Client(websocket)
         cm.add_client(client)
         try:
@@ -186,6 +187,7 @@ async def measure_microphone():
             in_notes = current_notes.difference(prev_notes)
             out_notes = prev_notes.difference(current_notes)
             for in_note in in_notes:
+                print("start: ", in_note)
                 cm.broadcast(create_message(None, "start", in_note))
             for out_note in out_notes:
                 cm.broadcast(create_message(None, "end", out_note))

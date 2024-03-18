@@ -1,6 +1,6 @@
 import time
 from rpi_ws281x import *
-from timeline import parseMidi
+from MidiProcessor import parseMidi
 
 class LEDStrip:
 
@@ -9,7 +9,7 @@ class LEDStrip:
     OFF = Color(0, 0, 0)
 
     def __init__(self, brightness):
-        self.LED_COUNT = 144
+        self.LED_COUNT = 128
         self.LED_PIN = 18 # must be PWM
         self.LED_FREQ_HZ = 800000
         self.DMA = 10
@@ -70,24 +70,26 @@ class LEDStrip:
     def playMidi(self, midi_file, speed=1.0):
         timeline = parseMidi(midi_file)
         for event_time, wait, event in timeline:
-            print(event_time, wait, 'ON' if event.event_type else 'OFF', event.key.note, event.key.led_num)
+            #print(event_time, wait, 'ON' if event.event_type else 'OFF', event.key.note, event.key.led_num)
             if event.event_type == 1:
                 self.switchOnLED(event.key.led_num)
             else:
                 self.switchOffLED(event.key.led_num)
             self.show()
+            print(wait)
             time.sleep(wait/(speed*1000))  # sleep for the duration of the note
 
 
 # demoing the LEDStrip class with a midi file
 LEDStrip = LEDStrip(50) # brightness set to 20/255
-LEDStrip.begin()
-LEDStrip.colorWipe()
 
 """
-MIDI_FILE = 'Marriagedamour.mid'
 LEDStrip.begin()
 LEDStrip.colorWipe()
-LEDStrip.playMidi(MIDI_FILE, 0.12)  
 """
+
+MIDI_FILE = 'Ode-To-Joy.mid'
+LEDStrip.begin()
+LEDStrip.playMidi(MIDI_FILE, 1.0)  
+
 

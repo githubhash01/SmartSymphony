@@ -51,12 +51,13 @@ class Timeline:
     def playing(self):
         is_playing = self.instructions and self.current_instruction < len(self.instructions)
         if is_playing:
+            print(self.current_wait)
             self.current_wait, self.current_event = self.instructions[self.current_instruction]
             self.current_instruction += 1
         else:
             self.instructions = None
             self.current_event = None
-            self.current_Wait = 0.0
+            self.current_wait = 0.0
         return is_playing
     
     def get_event(self):
@@ -66,4 +67,4 @@ class Timeline:
         self.speed = speed
     
     async def wait(self):
-        await asyncio.sleep(self.current_wait / self.speed)
+        await asyncio.sleep(self.current_wait / (self.speed * 1000.0))

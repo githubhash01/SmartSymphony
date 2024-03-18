@@ -1,5 +1,7 @@
 import RPi.GPIO as GPIO
 
+GPIO.setmode(GPIO.BCM)
+
 class Actuators:
     def __init__(self):
         self.motorPins = [12, 5, 16, 18, 22, 24, 26]

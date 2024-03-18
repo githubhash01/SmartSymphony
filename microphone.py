@@ -15,7 +15,7 @@ class Microphone:
                             start=False)
         self.pitch_o = aubio.pitch("default", 4096, 1024, 44100)
         self.pitch_o.set_unit("midi")
-        self.pitch_o.set_tolerance(0.8)
+        self.pitch_o.set_tolerance(0.5)
         self.running = False
         self.note = None
         self.notes = set()

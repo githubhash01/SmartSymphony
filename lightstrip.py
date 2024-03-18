@@ -6,7 +6,7 @@ class Lightstrip:
     OFF = Color(0, 0, 0)
 
     def __init__(self, brightness):
-        self.LED_COUNT = 60
+        self.LED_COUNT = 128
         self.LED_PIN = 18 # must be PWM
         self.LED_FREQ_HZ = 800000
         self.DMA = 10
@@ -23,10 +23,10 @@ class Lightstrip:
         self.strip.begin()
         
     def switchOnLED(self, led_index):
-        self.strip.setPixelColor(led_index, LEDStrip.GREEN)
+        self.strip.setPixelColor(led_index, Lightstrip.GREEN)
 
     def switchOffLED(self, led_index):
-        self.strip.setPixelColor(led_index, LEDStrip.OFF)
+        self.strip.setPixelColor(led_index, Lightstrip.OFF)
 
     async def play(self, timeline):
         while timeline.playing():
