@@ -1,6 +1,7 @@
 from keys import Key, KeyEvent
 import mido
 import asyncio
+import pretty_midi as pm
 
 class Timeline:
     def __init__(self, midi_file):
@@ -13,7 +14,6 @@ class Timeline:
     def parseTrack(self, track):
         timeline = []
         current_time = 0
-
         for msg in track:
             current_time += msg.time
             if msg.type in ['note_on', 'note_off']:
@@ -24,7 +24,11 @@ class Timeline:
 
         return timeline
 
+
     def parseMidi(self, midi_file):
+        test = pm.PrettyMIDI(midi_file)
+        print(test.get_onsets())
+        
         mid = mido.MidiFile(midi_file)
         combined_timeline = [event for track in mid.tracks for event in self.parseTrack(track) if track]
         combined_timeline.sort(key=lambda x: x[0])
@@ -35,7 +39,7 @@ class Timeline:
             wait_time = combined_timeline[i + 1][0] - combined_timeline[i][0]
             wait_times.append(wait_time)
         wait_times.append(0)  # no wait time for the last event
-        combined_timeline = [(wait, event) for (_, event), wait in zip(combined_timeline, wait_times)]
+        combined_timeline = [(wait, event) for (time, event), wait in zip(combined_timeline, wait_times)]
         return combined_timeline
     
     def seek(self, time):
@@ -51,7 +55,6 @@ class Timeline:
     def playing(self):
         is_playing = self.instructions and self.current_instruction < len(self.instructions)
         if is_playing:
-            print(self.current_wait)
             self.current_wait, self.current_event = self.instructions[self.current_instruction]
             self.current_instruction += 1
         else:
@@ -67,4 +70,5 @@ class Timeline:
         self.speed = speed
     
     async def wait(self):
+        print(self.speed, self.current_wait, self.current_wait / (self.speed * 1000.0))
         await asyncio.sleep(self.current_wait / (self.speed * 1000.0))

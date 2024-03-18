@@ -56,6 +56,7 @@ class Output:
             self.play()
     
     def play(self):
+        print("play")
         if not self.left_hand_hardware or not self.left_hand_midi or not self.right_hand_hardware or not self.left_hand_midi:
             return False
         if self.left_hand_task:
