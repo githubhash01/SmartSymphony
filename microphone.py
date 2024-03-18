@@ -26,12 +26,14 @@ class Microphone:
         self.p.terminate()
     
     def start(self):
-        self.stream.start_stream()
-        self.running = True
+        if not self.running:
+            self.stream.start_stream()
+            self.running = True
     
     def stop(self):
-        self.stream.stop_stream()
-        self.running = False
+        if self.running:
+            self.stream.stop_stream()
+            self.running = False
     
     def get_notes(self):
         return self.notes

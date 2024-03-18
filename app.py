@@ -13,18 +13,16 @@ from output import Output
 this_module = sys.modules[__name__]
 
 output = Output()
-
 lightstrip = Lightstrip(20) # brightness set to 20/255
-
 actuators = Actuators()
 
 microphone = Microphone()
-microphone.start()
 
 class Client:
     def __init__(self, websocket):
         self.websocket = websocket
         self.listen = False
+        self.authenticated = False
     
     def get_websocket(self):
         return self.websocket
@@ -34,6 +32,36 @@ class Client:
     
     def is_listening(self):
         return self.listen
+
+class ClientManager:
+    def __init__(self):
+        self.clients = set()
+        self.num_listening = 0
+    
+    def add_client(self, client):
+        self.clients.add(client)
+    
+    def remove_client(self, client):
+        if client.is_listening():
+            self.num_listening -= 1
+        self.clients.remove(client)
+    
+    def set_listening(self, client, listening):
+        if not client.is_listening() and listening:
+            self.num_listening += 1
+        elif client.is_listening() and not listening:
+            self.num_listening -= 1
+        client.set_listening(listening)
+    
+    def broadcast(self, message):
+        for client in self.clients:
+            if client.is_listening():
+                asyncio.create_task(send(client.get_websocket(), message))
+    
+    def any_listening(self):
+        return self.num_listening > 0
+
+cm = ClientManager()
         
 def create_message(cmd_id, cmd_name, cmd_data):
     return json.dumps({
@@ -49,12 +77,7 @@ def cmd_verify(client, requirements):
     return True
     
 def cmd_is_playing_note(client, note):
-    # TODO: This function should return True IFF the user is playing
-    # the note 'note' on the keyboard. If 'note' is None, return True
-    # IFF any note is being played. If 'note' is an array of notes,
-    # return True IFF all notes in the array are being played
-    print(note)
-    return False
+    return note in microphone.get_notes()
     
 def cmd_play_note(client, info):
     # TODO: This function plays the note specified in 'info', either
@@ -88,31 +111,18 @@ def cmd_set_midi(client, info):
     info = json.loads(info)
     print(info["midi"])
     midi_file = base64.b64decode(info["midi"])
-    with open("input_midi.mid", "wb") as f:
+    with open("input_midi.mid", "wb") as f: # HACK!!! TODO: See if midi files can be read directrly from memory
         f.write(midi_file)
     if info["hand"] == "left":
         output.set_left_hand_midi("input_midi.mid")
     elif info["hand"] == "right":
         output.set_right_hand_midi("input_midi.mid")
 
-# TODO: HACK!!! Fix this
-num_listening = 0
-
-def cmd_listen(client, enable):
-    # TODO: This function should enable or disable client listening.
-    # If listening is enabled, the client should be sent a message
-    # every time a note begins to be played containing the note being
-    # played as well as a message when a note stops being played.
-    #if not client.is_listening() and enable:
-    #    num_listening += 1
-    #elif client.is_listening() and not enable:
-    #    num_listening -= 1
-    client.set_listening(enable)
+def cmd_listen(client, listening):
+    cm.set_listening(client, listening)
 
 def create_error(reason):
     return create_message(None, "error", reason)
-    
-CLIENTS = set()
 
 async def send(websocket, message):
     try:
@@ -120,14 +130,9 @@ async def send(websocket, message):
     except websockets.ConnectionClosed:
         pass
 
-def broadcast(message):
-    for client in CLIENTS:
-        if client.is_listening():
-            asyncio.create_task(send(client.get_websocket(), message))
-
 async def handler(websocket):
     client = Client(websocket)
-    CLIENTS.add(client)
+    cm.add_client(client)
     try:
         async for message in websocket:
             print(message)
@@ -150,26 +155,28 @@ async def handler(websocket):
                 await send(client.get_websocket(), error)
                 continue
     finally:
-        CLIENTS.remove(client)
+        cm.remove_client(client)
 
-# TODO: clean and fix, how to keep track of connected users? Maybe a function or something
-async def measure():
+async def measure_microphone():
     prev_notes = set()
     while True:
-        #if num_listening != 0:
-        microphone.calculate_notes()
-        current_notes = microphone.get_notes()
-        in_notes = current_notes.difference(prev_notes)
-        out_notes = prev_notes.difference(current_notes)
-        for in_note in in_notes:
-            broadcast(create_message(None, "start", in_note))
-        for out_note in out_notes:
-            broadcast(create_message(None, "end", out_note))
-        prev_notes = current_notes.copy()
+        if cm.any_listening():
+            microphone.start()
+            microphone.calculate_notes()
+            current_notes = microphone.get_notes()
+            in_notes = current_notes.difference(prev_notes)
+            out_notes = prev_notes.difference(current_notes)
+            for in_note in in_notes:
+                cm.broadcast(create_message(None, "start", in_note))
+            for out_note in out_notes:
+                cm.broadcast(create_message(None, "end", out_note))
+            prev_notes = current_notes.copy()
+        else:
+            microphone.stop()
         await asyncio.sleep(0)
         
 async def main():
-    asyncio.create_task(measure())
+    asyncio.create_task(measure_microphone())
     async with websockets.serve(handler, "", 8001):
         await asyncio.Future()
 
