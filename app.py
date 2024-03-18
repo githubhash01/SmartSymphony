@@ -4,13 +4,20 @@ import sys
 import websockets
 import requests
 import base64
-import io
+import urllib
 from lightstrip import Lightstrip
 from actuators import Actuators
 from microphone import Microphone
 from output import Output
 
 this_module = sys.modules[__name__]
+
+# Ideally, this would be something like
+# https://smartsymphony.com, rather than
+# an IP with a port. make sure to change
+# it when you boot up the website to the
+# website IP!
+BaseURL = "http://192.168.0.10:5000"
 
 output = Output()
 lightstrip = Lightstrip(20) # brightness set to 20/255
@@ -62,7 +69,7 @@ class ClientManager:
         return self.num_listening > 0
 
 cm = ClientManager()
-        
+
 def create_message(cmd_id, cmd_name, cmd_data):
     return json.dumps({
         "cmd_id": cmd_id,
@@ -130,32 +137,44 @@ async def send(websocket, message):
     except websockets.ConnectionClosed:
         pass
 
-async def handler(websocket):
-    client = Client(websocket)
-    cm.add_client(client)
-    try:
-        async for message in websocket:
-            print(message)
-            message = json.loads(message)
-            if not "cmd_name" in message:
-                error = create_error("message has no cmd_name")
-                await send(client.get_websocket(), error)
-                continue
-            cmd_id = message.get("cmd_id")
-            cmd_name = message["cmd_name"]
-            cmd_data = message["cmd_data"]
-            try:
-                cmd = getattr(this_module, f"cmd_{cmd_name}")
-                result_data = cmd(client, cmd_data)
-                result = create_message(cmd_id, cmd_name, result_data)
-                await send(client.get_websocket(), result)
-            except Exception as e:
-                print(e)
-                error = create_error(f"error calling {cmd_name}")
-                await send(client.get_websocket(), error)
-                continue
-    finally:
-        cm.remove_client(client)
+async def handler(websocket, path):
+    path = path[1:]
+    auth_user = dict(item.split("=") for item in path.split(","))
+    auth_user = dict([key, int(value)] for key, value in auth_user.items())
+    assert "user_id" in auth_user
+    assert "auth_code" in auth_user
+    assert len(auth_user) == 2
+    global credentials
+    auth_user = credentials | auth_user
+    valid = False
+    with requests.Session() as session:
+        valid = session.post(BaseURL + "/auth_user", data=auth_user).json()
+    if valid:
+        client = Client(websocket)
+        cm.add_client(client)
+        try:
+            async for message in websocket:
+                print(message)
+                message = json.loads(message)
+                if not "cmd_name" in message:
+                    error = create_error("message has no cmd_name")
+                    await send(client.get_websocket(), error)
+                    continue
+                cmd_id = message.get("cmd_id")
+                cmd_name = message["cmd_name"]
+                cmd_data = message["cmd_data"]
+                try:
+                    cmd = getattr(this_module, f"cmd_{cmd_name}")
+                    result_data = cmd(client, cmd_data)
+                    result = create_message(cmd_id, cmd_name, result_data)
+                    await send(client.get_websocket(), result)
+                except Exception as e:
+                    print(e)
+                    error = create_error(f"error calling {cmd_name}")
+                    await send(client.get_websocket(), error)
+                    continue
+        finally:
+            cm.remove_client(client)
 
 async def measure_microphone():
     prev_notes = set()
@@ -180,14 +199,9 @@ async def main():
     async with websockets.serve(handler, "", 8001):
         await asyncio.Future()
 
-# Ideally, this would be something like
-# https://smartsymphony.com, rather than
-# an IP with a port. make sure to change
-# it when you boot up the website to the
-# website IP!
-BaseURL = "http://192.168.0.10:5000"
-
 if __name__ == "__main__":
+    global credentials
+
     with open("credentials.txt") as credentials_file: 
         credentials_contents = credentials_file.read()
         credentials = json.loads(credentials_contents)
