@@ -24,7 +24,7 @@ class Values():
     LEFT_MIN_FREQUENCY = 40
     LEFT_MAX_FREQUENCY = 120
     Frequency_Difference_Threshold = 100
-    WAIT_CYCLE_TIME = 5
+    WAIT_CYCLE_TIME = 0
 
 class Tuner():
     def __init__(self):

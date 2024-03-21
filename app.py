@@ -5,8 +5,9 @@ import websockets
 import requests
 import base64
 import urllib
+import io
 from lightstrip import Lightstrip
-#from actuators import Actuators
+from actuators import Actuators
 from microphone import Microphone
 from output import Output
 
@@ -16,12 +17,12 @@ this_module = sys.modules[__name__]
 # https://smartsymphony.com, rather than
 # an IP with a port. make sure to change
 # it when you boot up the website to the
-# website IP!
-BaseURL = "http://172.24.49.91:5000"
+# website IP!.
+BaseURL = "http://172.24.42.29:5000"
 
 output = Output()
-lightstrip = Lightstrip(20) # brightness set to 20/255
-#actuators = Actuators()
+lightstrip = Lightstrip() # brightness set to 20/255
+actuators = Actuators()
 
 microphone = Microphone()
 
@@ -108,7 +109,7 @@ def cmd_set_hardware(client, info):
     if info["hardware"] == "lightstrip":
         hardware = lightstrip
     elif info["hardware"] == "actuators":
-        hardware = None #actuators
+        hardware = actuators
     if info["hand"] == "left":
         output.set_left_hand_hardware(hardware)
     elif info["hand"] == "right":
@@ -116,14 +117,11 @@ def cmd_set_hardware(client, info):
     
 def cmd_set_midi(client, info):
     info = json.loads(info)
-    print(info["midi"])
-    midi_file = base64.b64decode(info["midi"])
-    with open("input_midi.mid", "wb") as f: # HACK!!! TODO: See if midi files can be read directrly from memory
-        f.write(midi_file)
+    midi_file = io.BytesIO(base64.b64decode(info["midi"]))
     if info["hand"] == "left":
-        output.set_left_hand_midi("input_midi.mid")
+        output.set_left_hand_midi(midi_file)
     elif info["hand"] == "right":
-        output.set_right_hand_midi("input_midi.mid")
+        output.set_right_hand_midi(midi_file)
 
 def cmd_listen(client, listening):
     cm.set_listening(client, listening)
@@ -150,7 +148,6 @@ async def handler(websocket, path):
     with requests.Session() as session:
         valid = session.post(BaseURL + "/auth_user", data=auth_user).json()
     if valid:
-        print("IN")
         client = Client(websocket)
         cm.add_client(client)
         try:

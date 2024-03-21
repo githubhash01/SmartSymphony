@@ -28,9 +28,10 @@ class LEDStrip:
 
     def colorWipe(self, color=GREEN, wait_ms=50):
         for i in range(self.LED_COUNT):
-            self.strip.setPixelColor(i, color)
-            self.strip.show()
-            time.sleep(wait_ms/1000.0)
+            if i % 4 != 1: 
+                self.strip.setPixelColor(i, color)
+                self.strip.show()
+                time.sleep(wait_ms/1000.0)
         self.turnOffStrip()
 
     def playSet(self, led_index):
@@ -67,8 +68,6 @@ class LEDStrip:
         self.strip.show()
 
     def playMidi(self, timeline):
-        while timeline.playing():
-            
         for event_time, wait, event in timeline:
             print(event_time, wait, 'ON' if event.event_type else 'OFF', event.key.note, event.key.led_num)
             if event.event_type == 1:

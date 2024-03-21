@@ -1,15 +1,17 @@
 import time
 from rpi_ws281x import *
+import neopixel 
 from MidiProcessor import parseMidi
 
 class LEDStrip:
 
     # Class variables for colors
-    GREEN = Color(0, 255, 0)
+    GREEN = Color(25, 25, 25)
+    ON = Color(25, 25, 25) 
     OFF = Color(0, 0, 0)
 
     def __init__(self, brightness):
-        self.LED_COUNT = 128
+        self.LED_COUNT = 144
         self.LED_PIN = 18 # must be PWM
         self.LED_FREQ_HZ = 800000
         self.DMA = 10
@@ -26,12 +28,27 @@ class LEDStrip:
         
     def begin(self):
         self.strip.begin()
-
-    def colorWipe(self, color=GREEN, wait_ms=50):
+    
+    def getColor(self, led_index):
+        return Color(25, 25, 25)
+    """
+        #r, g, b = self.ON
+        offset = led_index % 3
+        if offset == 0:
+            return Color(255, 0, 0) 
+        elif offset == 1:
+            return Color(0, 255, 0) 
+        else:
+            return Color(0, 0, 0)
+    """
+    
+            
+    def colorWipe(self, wait_ms=50):
         for i in range(self.LED_COUNT):
-            self.strip.setPixelColor(i, color)
+            self.strip.setPixelColor(i, self.getColor(i))
             self.strip.show()
-            time.sleep(wait_ms/1000.0)
+            time.sleep(wait_ms/50.0)
+            print(i) 
         self.turnOffStrip()
 
     def playSet(self, led_index):
@@ -39,7 +56,7 @@ class LEDStrip:
         self.lightLEDS(led_index)
         
     def switchOnLED(self, led_index):
-        self.strip.setPixelColor(led_index, LEDStrip.GREEN)
+        self.strip.setPixelColor(led_index, self.getColor(led_index))
 
     def switchOffLED(self, led_index):
         self.strip.setPixelColor(led_index, LEDStrip.OFF)
@@ -52,8 +69,10 @@ class LEDStrip:
         if not led_indices:
             return
         for led_index in led_indices:
-            self.strip.setPixelColor(led_index, LEDStrip.GREEN)
+            self.strip.setPixelColor(led_index, LEDStrip.ON)
         self.strip.show()
+        time.sleep(2)
+        
 
     def turnOffLEDS(self, led_index):
         if not led_index:
@@ -81,15 +100,19 @@ class LEDStrip:
 
 
 # demoing the LEDStrip class with a midi file
-LEDStrip = LEDStrip(50) # brightness set to 20/255
+LEDStrip = LEDStrip(255) # brightness set to 20/255
 
-"""
-LEDStrip.begin()
-LEDStrip.colorWipe()
-"""
 
-MIDI_FILE = 'Ode-To-Joy.mid'
 LEDStrip.begin()
-LEDStrip.playMidi(MIDI_FILE, 1.0)  
+#LEDStrip.colorWipe()
+
+test = [126]
+update = [i-1 for i in test]
+LEDStrip.lightLEDS(update)
+print(test) 
+LEDStrip.turnOffStrip()
+#MIDI_FILE = 'Ode-To-Joy.mid'
+#LEDStrip.begin()
+#LEDStrip.playMidi(MIDI_FILE, 1.0)  
 
 

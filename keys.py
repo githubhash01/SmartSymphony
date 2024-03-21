@@ -21,31 +21,32 @@ class Key:
         return note
     
     def get_led(self): 
-        octave_2_dict = {'C':1, 'C#':2, 'D':3, 'D#':4, 'E':4, 'F':5, 'F#':6, 'G':7, 'G#':8, 'A':8, 'A#':9, 'B':10}
-        octave_3_dict = {'C':11, 'C#':12, 'D':12, 'D#':13, 'E':14, 'F':15, 'F#':16, 'G':16, 'G#':17, 'A':18, 'A#':19, 'B':19}
-        octave_4_dict = {'C':20, 'C#':21, 'D':22, 'D#':23, 'E':24, 'F':25, 'F#':25, 'G':26, 'G#':27, 'A':28, 'A#':28, 'B':29}
-        octave_5_dict = {'C':30, 'C#':31, 'D':32, 'D#':32, 'E':33, 'F':34, 'F#':35, 'G':36, 'G#':36, 'A':37, 'A#':38, 'B':39}
-        octave_6_dict = {'C':40}
+        octave_2_dict = {'C':0, 'C#':2, 'D':4, 'D#':6, 'E':8, 'F':10, 'F#':12, 'G':14, 'G#':16, 'A':18, 'A#':20, 'B':21}
+        octave_3_dict = {'C':23, 'C#':25, 'D':27, 'D#':29, 'E':31, 'F':33, 'F#':35, 'G':37, 'G#':39, 'A':41, 'A#':43, 'B':45}
+        octave_4_dict = {'C':47, 'C#':49, 'D':51, 'D#':53, 'E':55, 'F':57, 'F#':59, 'G':61, 'G#':62, 'A':64, 'A#':66, 'B':68}
+        octave_5_dict = {'C':70, 'C#':72, 'D':74, 'D#':76, 'E':77, 'F':79, 'F#':81, 'G':83, 'G#':85, 'A':87, 'A#':89, 'B':91}
+        octave_6_dict = {'C':93}
 
         # get the octave of the note
         octave = self.note[-1]
         note = self.note[:-1]
         # return the led number based on the octave
         if octave == '2':
-            return octave_2_dict[note] - 2
+            return octave_2_dict[note]
         elif octave == '3':
-            return octave_3_dict[note] - 2
+            return octave_3_dict[note]
         elif octave == '4':
-            return octave_4_dict[note] - 2 
+            return octave_4_dict[note]
         elif octave == '5':
-            return octave_5_dict[note] - 2
+            return octave_5_dict[note]
         elif octave == '6':
-            return octave_6_dict[note] - 2
+            return octave_6_dict[note]
         else:
             return -1
     
     def get_actuator(self):
-        note_to_actuator_dict = {'C' : 12, 'D' : 5, 'E' : 16, 'F' : 18, 'G' : 22, 'A' : 24, 'B' : 26}
+        [12, 13, 5, 6, 16, 17, 22, 23, 24, 25, 26, 27]
+        note_to_actuator_dict = {'C' : 12, 'C#' : 13, 'D' : 5, 'D#' : 6, 'E' : 16, 'F' : 17, 'F#' : 22, 'G' : 23, 'G#' : 24, 'A' : 25, 'A#' : 26, 'B' : 27}
         note = self.note[:-1]
         return note_to_actuator_dict.get(note)
 
