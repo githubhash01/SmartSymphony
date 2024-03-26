@@ -4,11 +4,10 @@ import sys
 import websockets
 import requests
 import base64
-import urllib
 import io
 from lightstrip import Lightstrip
 from actuators import Actuators
-from output import Output
+from controller import Controller
 from keys import Key
 from VariableMicrophone import Tuner
 
@@ -21,11 +20,10 @@ this_module = sys.modules[__name__]
 # website IP!.
 BaseURL = "http://172.24.53.168:5000"
 
-lightstrip = Lightstrip() # brightness set to 20/255
+lightstrip = Lightstrip()
 actuators = Actuators()
-#microphone = Microphone()
-mic = Tuner(1,115,75,30,10,40,120,0) 
-output = Output(mic)
+microphone = Tuner(1, 115, 75, 30, 10, 40, 120, 0) 
+controller = Controller(microphone)
 
 class Client:
     def __init__(self, websocket):
@@ -48,7 +46,10 @@ class ClientManager:
         self.num_listening = 0
     
     def add_client(self, client):
-        self.clients.add(client)
+        if len(self.clients) == 0:
+            self.clients.add(client)
+            return True
+        return False
     
     def remove_client(self, client):
         if client.is_listening():
@@ -119,34 +120,37 @@ def cmd_stop_note(client, info):
         lightstrip.stop_note(key)
     
 def cmd_set_speed(client, speed):
-    output.set_speed(speed)
+    controller.set_speed(speed)
     
 def cmd_set_time(client, time):
-    output.seek(time)
+    controller.seek(time)
     
 def cmd_set_play(client, start):
     if start:
-        return output.play()
-    return output.stop()
+        return controller.play()
+    return controller.pause()
     
 def cmd_set_hardware(client, info):
     info = json.loads(info)
+    feedback = False
     hardware = None
     if info["hardware"] == "actuators":
-        output.set_feedback(info["hand"], False)
+        feedback = False
         hardware = actuators
     elif info["hardware"] == "lightstrip":
-        output.set_feedback(info["hand"], False)
+        feedback = False
         hardware = lightstrip
     elif info["hardware"] == "feedback":
-        output.set_feedback(info["hand"], True)
+        feedback = True
         hardware = lightstrip
-    output.set_hardware(info["hand"], hardware)
+    controller.set_feedback(info["hand"], feedback)
+    controller.set_hardware(info["hand"], hardware)
     
 def cmd_set_midi(client, info):
     info = json.loads(info)
-    midi_file = io.BytesIO(base64.b64decode(info["midi"]))
-    output.set_midi(info["hand"], midi_file)
+    left_midi_file = io.BytesIO(base64.b64decode(info["left"]))
+    right_midi_file = io.BytesIO(base64.b64decode(info["right"]))
+    controller.set_midi(left_midi_file, right_midi_file)
 
 def cmd_listen(client, listening):
     cm.set_listening(client, listening)
@@ -174,38 +178,39 @@ async def handler(websocket, path):
         valid = session.post(BaseURL + "/auth_user", data=auth_user).json()
     if valid:
         client = Client(websocket)
-        cm.add_client(client)
-        try:
-            async for message in websocket:
-                print(message)
-                message = json.loads(message)
-                if not "cmd_name" in message:
-                    error = create_error("message has no cmd_name")
-                    await send(client.get_websocket(), error)
-                    continue
-                cmd_id = message.get("cmd_id")
-                cmd_name = message["cmd_name"]
-                cmd_data = message["cmd_data"]
-                try:
-                    cmd = getattr(this_module, f"cmd_{cmd_name}")
-                    result_data = cmd(client, cmd_data)
-                    result = create_message(cmd_id, cmd_name, result_data)
-                    await send(client.get_websocket(), result)
-                except Exception as e:
-                    print(e)
-                    error = create_error(f"error calling {cmd_name}")
-                    await send(client.get_websocket(), error)
-                    continue
-        finally:
-            cm.remove_client(client)
-
+        if cm.add_client(client):
+            try:
+                async for message in websocket:
+                    print(message)
+                    message = json.loads(message)
+                    if not "cmd_name" in message:
+                        error = create_error("message has no cmd_name")
+                        await send(client.get_websocket(), error)
+                        continue
+                    cmd_id = message.get("cmd_id")
+                    cmd_name = message["cmd_name"]
+                    cmd_data = message["cmd_data"]
+                    try:
+                        cmd = getattr(this_module, f"cmd_{cmd_name}")
+                        result_data = cmd(client, cmd_data)
+                        result = create_message(cmd_id, cmd_name, result_data)
+                        await send(client.get_websocket(), result)
+                    except Exception as e:
+                        print(e)
+                        error = create_error(f"error calling {cmd_name}")
+                        await send(client.get_websocket(), error)
+                        continue
+            finally:
+                controller.stop()
+                cm.remove_client(client)
+            
 async def measure_microphone():
-    """prev_notes = set()
+    prev_notes = set()
     was_awaiting = False
     while True:
         if cm.any_listening():
             microphone.start()
-            microphone.calculate_notes()
+            microphone.process_samples()
             current_notes = microphone.get_notes()
             in_notes = current_notes.difference(prev_notes)
             out_notes = prev_notes.difference(current_notes)
@@ -221,30 +226,6 @@ async def measure_microphone():
                 was_awaiting = is_awaiting
         else:
             microphone.stop()
-        await asyncio.sleep(0)
-        """
-    prev_notes = set()
-    was_awaiting = False
-    while True:
-        if cm.any_listening():
-            mic.start()
-            mic.process_samples()
-            current_notes = mic.get_notes()
-            #print("current:-",current_notes)
-            in_notes = current_notes.difference(prev_notes)
-            out_notes = prev_notes.difference(current_notes)
-            for in_note in in_notes:
-                print("start: ", in_note) 
-                cm.broadcast(create_message(None, "start", in_note))
-            for out_note in out_notes:
-                cm.broadcast(create_message(None, "end", out_note))
-            prev_notes = current_notes.copy()
-            is_awaiting = mic.is_awaiting()
-            if was_awaiting != is_awaiting:
-                cm.broadcast(create_message(None, "awaiting", is_awaiting))
-                was_awaiting = is_awaiting
-        else:
-            mic.stop()
         await asyncio.sleep(0.1)
         
 async def main():

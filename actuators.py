@@ -1,4 +1,5 @@
 import RPi.GPIO as GPIO
+import asyncio
 
 GPIO.setmode(GPIO.BCM)
 
@@ -8,29 +9,23 @@ class Actuators:
         for pin in self.motorPins:
             GPIO.setup(pin, GPIO.OUT)
     
-    def turnOff(self):
+    def stop(self):
         for pin in self.motorPins:
             GPIO.output(pin, GPIO.LOW)
     
+    def pause(self):
+        self.stop()
+    
+    def start_note(self, key, hand=None):
+        GPIO.output(key.actuator, GPIO.HIGH)
+    
+    def stop_note(self, key, hand=None):
+        GPIO.output(key.actuator, GPIO.LOW)
+    
     async def play_note(self, key, length):
         try:
-            GPIO.output(event.key.actuator, GPIO.HIGH)
+            GPIO.output(key.actuator, GPIO.HIGH)
             await asyncio.sleep(length)
-            GPIO.output(event.key.actuator, GPIO.LOW)
-        except Exception as e:
-            print(e)
-    
-    async def play(self, timeline, hand, output):
-        try:
-            await timeline.wait()
-            while timeline.playing():
-                events = timeline.get_events()
-                for event in events:
-                    if event.key.actuator:
-                        if event.event_type == 1:
-                            GPIO.output(event.key.actuator, GPIO.HIGH)
-                        else:
-                            GPIO.output(event.key.actuator, GPIO.LOW)
-                await timeline.wait()
+            GPIO.output(key.actuator, GPIO.LOW)
         except Exception as e:
             print(e)

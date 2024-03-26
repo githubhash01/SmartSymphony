@@ -11,12 +11,12 @@ class Lightstrip:
     BRIGHTNESS = 0.2 # 20% brightness
     
     BLACK = (0, 0, 0, 0)
-    GREEN = (50, 255, 50, 0)
-    DARK_GREEN = (0, 255, 0, 0)
-    RED = (255, 0, 0, 0)
-    DARK_RED = (255, 50, 50, 0)
-    BLUE = (0, 0, 255, 0)
-    DARK_BLUE = (50, 50, 255, 0)
+    ORANGE = (255, 220, 125, 0)
+    DARK_ORANGE = (255, 187, 0, 0)
+    BLUE = (122, 122, 255, 0)
+    DARK_BLUE = (0, 0, 255, 0)
+    WHITE = (255, 255, 255, 0)
+    DARK_WHITE = (180, 180, 180, 0)
 
     def __init__(self):
         self.num_pixels = Lightstrip.NUM_PIXELS
@@ -28,18 +28,21 @@ class Lightstrip:
                                         auto_write=True, 
                                         pixel_order=neopixel.GRBW)
         self.pixelsList = [[Lightstrip.BLACK] for _ in self.pixels]
-        self.turnOff()
+        self.turn_off()
             
-    def turnOff(self):
+    def stop(self):
         self.pixels.fill(Lightstrip.BLACK)
         self.pixelsList = [[Lightstrip.BLACK] for _ in self.pixels]
+    
+    def pause(self):
+        pass
 
-    def lightPixels(self, leds, colour):
+    def light_pixels(self, leds, colour):
         for l in leds:
             self.pixelsList[l].append(colour)
             self.pixels[l] = colour
 
-    def turnOffPixels(self, leds, colour):
+    def disable_pixels(self, leds, colour):
         for l in leds:
             try:
                 self.pixelsList[l].remove(colour)
@@ -53,20 +56,20 @@ class Lightstrip:
     def get_colour(self, key, hand):
         white_key = key.note[1] == "#"
         if hand == "left":
-            return Lightstrip.RED if white_key else Lightstrip.DARK_RED
-        elif hand == "right": 
-            return Lightstrip.GREEN if white_key else Lightstrip.DARK_GREEN
-        else:
             return Lightstrip.BLUE if white_key else Lightstrip.DARK_BLUE
+        elif hand == "right": 
+            return Lightstrip.ORANGE if white_key else Lightstrip.DARK_ORANGE
+        else:
+            return Lightstrip.WHITE if white_key else Lightstrip.DARK_WHITE
     
     def start_note(self, key, hand=None):
         leds = self.get_leds(key)
-        self.lightPixels(leds, self.get_colour(key, hand)) # event note is a string 'C6'
+        self.light_pixels(leds, self.get_colour(key, hand)) # event note is a string 'C6'
         self.pixels.show()
     
     def stop_note(self, key, hand=None):
         leds = self.get_leds(key)
-        self.turnOffPixels(leds, self.get_colour(key, hand))
+        self.disable_pixels(leds, self.get_colour(key, hand))
         self.pixels.show()
     
     async def play_note(self, key, length):
@@ -76,25 +79,3 @@ class Lightstrip:
             self.stop_note(key)
         except Exception as e:
             print(e)
-    
-    async def play(self, timeline, hand, output):
-        try:
-            await timeline.wait()
-            while timeline.playing():
-                events = timeline.get_events()
-                for event in events:
-                    if event.event_type == 1:
-                        self.start_note(event.key, hand)
-                    elif event.event_type == 0:
-                        self.stop_note(event.key, hand)
-                if output and event.event_type == 1:
-                    notes = set()
-                    for event in events:
-                        if event.event_type == 1:
-                            notes.add(event.key.note)
-                    await output.set_awaiting(hand, notes)
-                await timeline.wait()
-            self.turnOffStrip()
-        except Exception as e:
-            print(e)
-      
