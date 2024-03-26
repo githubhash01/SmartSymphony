@@ -11,7 +11,7 @@ def parseTrack(track):
     for msg in track:
         current_time += msg.time
         if msg.type in ['note_on', 'note_off']:
-            key = Key(msg.note)
+            key = Key(msg.note - 12)
             event_type = 1 if msg.type == 'note_on' and msg.velocity != 0 else 0
             event = KeyEvent(key, event_type)
             timeline.append((current_time, event))
@@ -19,8 +19,11 @@ def parseTrack(track):
     return timeline
 
 
-def parseMidi(midi_file):
+def parseMidi(midi_file, track_nums=None):
     mid = mido.MidiFile(midi_file)
+    
+    if track_nums:
+        mid.tracks = [mid.tracks[i] for i in track_nums] 
     combined_timeline = [event for track in mid.tracks for event in parseTrack(track) if track]
     combined_timeline.sort(key=lambda x: x[0])
 

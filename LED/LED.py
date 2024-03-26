@@ -1,5 +1,6 @@
 import time
 from rpi_ws281x import *
+from VariableMicrophone import Tuner
 
 class LEDStrip:
 
@@ -77,14 +78,16 @@ class LEDStrip:
             self.show()
             time.sleep(wait/(speed*1000))  # sleep for the duration of the note
 
+            
 
-# demoing the LEDStrip class with a midi file
+
+ demoing the LEDStrip class with a midi file
 LEDStrip = LEDStrip(20) # brightness set to 20/255
 LEDStrip.colorWipe()
 
-"""
-MIDI_FILE = 'Marriagedamour.mid'
-LEDStrip.begin()
-LEDStrip.colorWipe()
-LEDStrip.playMidi(MIDI_FILE, 0.12)  
-"""
+
+#MIDI_FILE = 'Ode-To-Joy.mid'
+#LEDStrip.begin()
+#LEDStrip.colorWipe()
+#LEDStrip.playMidi(MIDI_FILE, 0.12)  
+

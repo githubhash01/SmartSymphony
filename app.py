@@ -8,8 +8,9 @@ import urllib
 import io
 from lightstrip import Lightstrip
 from actuators import Actuators
-from microphone import Microphone
 from output import Output
+from keys import Key
+from VariableMicrophone import Tuner
 
 this_module = sys.modules[__name__]
 
@@ -18,13 +19,13 @@ this_module = sys.modules[__name__]
 # an IP with a port. make sure to change
 # it when you boot up the website to the
 # website IP!.
-BaseURL = "http://172.24.42.29:5000"
+BaseURL = "http://172.24.53.168:5000"
 
-output = Output()
 lightstrip = Lightstrip() # brightness set to 20/255
 actuators = Actuators()
-
-microphone = Microphone()
+#microphone = Microphone()
+mic = Tuner(1,115,75,30,10,40,120,0) 
+output = Output(mic)
 
 class Client:
     def __init__(self, websocket):
@@ -83,15 +84,39 @@ def cmd_verify(client, requirements):
     # 'requirements' are connected
     print(requirements)
     return True
+
+def cmd_verify_all(client, requirements):
+    result = {}
+    for requirement in requirements:
+        result[requirement] = True
+    return result
     
 def cmd_is_playing_note(client, note):
     return note in microphone.get_notes()
     
 def cmd_play_note(client, info):
-    # TODO: This function plays the note specified in 'info', either
-    # on the actuators or lightbar, specified in 'info'. A play length
-    # also provided in info
-    print(info)
+    info = json.loads(info)
+    key = Key(0, info["note"])
+    if info["hardware"] == "lightstrip":
+        asyncio.create_task(lightstrip.play_note(key, float(info["length"])))
+    elif info["hardware"] == "actuators":
+        asyncio.create_task(lightstrip.play_note(key, float(info["length"])))
+    
+def cmd_start_note(client, info):
+    info = json.loads(info) 
+    key = Key(0, info["note"])
+    if info["hardware"] == "lightstrip":
+        lightstrip.start_note(key)
+    elif info["hardware"] == "actuators":
+        lightstrip.start_note(key)
+    
+def cmd_stop_note(client, info):
+    info = json.loads(info)
+    key = Key(0, info["note"])
+    if info["hardware"] == "lightstrip":
+        lightstrip.stop_note(key)
+    elif info["hardware"] == "actuators":
+        lightstrip.stop_note(key)
     
 def cmd_set_speed(client, speed):
     output.set_speed(speed)
@@ -106,22 +131,22 @@ def cmd_set_play(client, start):
     
 def cmd_set_hardware(client, info):
     info = json.loads(info)
-    if info["hardware"] == "lightstrip":
-        hardware = lightstrip
-    elif info["hardware"] == "actuators":
+    hardware = None
+    if info["hardware"] == "actuators":
+        output.set_feedback(info["hand"], False)
         hardware = actuators
-    if info["hand"] == "left":
-        output.set_left_hand_hardware(hardware)
-    elif info["hand"] == "right":
-        output.set_right_hand_hardware(hardware)
+    elif info["hardware"] == "lightstrip":
+        output.set_feedback(info["hand"], False)
+        hardware = lightstrip
+    elif info["hardware"] == "feedback":
+        output.set_feedback(info["hand"], True)
+        hardware = lightstrip
+    output.set_hardware(info["hand"], hardware)
     
 def cmd_set_midi(client, info):
     info = json.loads(info)
     midi_file = io.BytesIO(base64.b64decode(info["midi"]))
-    if info["hand"] == "left":
-        output.set_left_hand_midi(midi_file)
-    elif info["hand"] == "right":
-        output.set_right_hand_midi(midi_file)
+    output.set_midi(info["hand"], midi_file)
 
 def cmd_listen(client, listening):
     cm.set_listening(client, listening)
@@ -175,7 +200,8 @@ async def handler(websocket, path):
             cm.remove_client(client)
 
 async def measure_microphone():
-    prev_notes = set()
+    """prev_notes = set()
+    was_awaiting = False
     while True:
         if cm.any_listening():
             microphone.start()
@@ -184,14 +210,42 @@ async def measure_microphone():
             in_notes = current_notes.difference(prev_notes)
             out_notes = prev_notes.difference(current_notes)
             for in_note in in_notes:
-                print("start: ", in_note)
+                print("start: ", in_note) 
                 cm.broadcast(create_message(None, "start", in_note))
             for out_note in out_notes:
                 cm.broadcast(create_message(None, "end", out_note))
             prev_notes = current_notes.copy()
+            is_awaiting = microphone.is_awaiting()
+            if was_awaiting != is_awaiting:
+                cm.broadcast(create_message(None, "awaiting", is_awaiting))
+                was_awaiting = is_awaiting
         else:
             microphone.stop()
         await asyncio.sleep(0)
+        """
+    prev_notes = set()
+    was_awaiting = False
+    while True:
+        if cm.any_listening():
+            mic.start()
+            mic.process_samples()
+            current_notes = mic.get_notes()
+            #print("current:-",current_notes)
+            in_notes = current_notes.difference(prev_notes)
+            out_notes = prev_notes.difference(current_notes)
+            for in_note in in_notes:
+                print("start: ", in_note) 
+                cm.broadcast(create_message(None, "start", in_note))
+            for out_note in out_notes:
+                cm.broadcast(create_message(None, "end", out_note))
+            prev_notes = current_notes.copy()
+            is_awaiting = mic.is_awaiting()
+            if was_awaiting != is_awaiting:
+                cm.broadcast(create_message(None, "awaiting", is_awaiting))
+                was_awaiting = is_awaiting
+        else:
+            mic.stop()
+        await asyncio.sleep(0.1)
         
 async def main():
     asyncio.create_task(measure_microphone())

@@ -1,14 +1,11 @@
 class Key:
-    def __init__(self, key_num, note=None):
+    def __init__(self, key_num):
         self.key_num = key_num
-        if note:
-            self.note = note
-        else:
-            self.note = self.get_note()
+        self.note = self.get_note()
         self.led_num = self.get_led()
-        self.actuator = self.get_actuator()
 
     def get_note(self):
+    
         note = self.key_num % 12
         octave = self.key_num // 12
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -46,15 +43,14 @@ class Key:
             return octave_6_dict[note]
         else:
             return -1
-    
-    def get_actuator(self):
-        note_to_actuator_dict = {'C' : 23, 'C#' : 12, 'D' : 22, 'D#' : 13, 'E' : 25, 'F' : 24, 'F#' : 6, 'G' : 5, 'G#' : 16, 'A' : 26, 'A#' : 17, 'B' : 27}
-        note = self.note[:-1]
-        return note_to_actuator_dict.get(note)
-
 
 class KeyEvent:
+
     def __init__(self, key, event_type):
         self.key = key
         self.event_type = event_type
         
+
+
+
+

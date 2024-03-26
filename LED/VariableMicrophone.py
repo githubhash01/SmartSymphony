@@ -2,13 +2,10 @@ import pyaudio
 from numpy import zeros, linspace, short, fromstring, hstack, transpose, log, log2, abs, mean
 from scipy.fft import fft
 import numpy as np
-#import threading
+import threading
 import queue
 from collections import deque
 import time
-import math
-import asyncio
-
 
 class Values():
     SENSITIVITY =  50#5(individual works good) #50(this worked)
@@ -32,9 +29,8 @@ class Tuner():
             input_device_index= 0 # Change this to the index of your input device if necessary
         )
         self.buffer = queue.Queue()
-        self.running = False
-        #self.results = deque()
-        self.results = []
+        self.running = True
+        self.results = deque()
         self.mapped_results = {}
         self.SAMPLES_FOR_AVERAGE = SAMPLES_FOR_AVERAGE #5(this worked)  # Number of samples to average
         self.RIGHT_MIN_FREQUENCY = RIGHT_MIN_FREQUENCY
@@ -44,10 +40,6 @@ class Tuner():
         self.LEFT_MIN_FREQUENCY = LEFT_MIN_FREQUENCY
         self.LEFT_MAX_FREQUENCY = LEFT_MAX_FREQUENCY
         self.WAIT_CYCLE_TIME = WAIT_CYCLE_TIME
-        self.awaiting = False
-        self.detected_note = None
-        self.stale = False
-        self.notes = set()
 
     def get_frequency_from_samples_right(self,audio_samples):
         frequencies = []
@@ -140,7 +132,7 @@ class Tuner():
                     continue
                 else:
                     current_group = [zipped[i]]
-            elif (zipped[i][0] > self.LEFT_MAX_FREQUENCY):
+            elif (zipped[i][0] > Values.LEFT_MAX_FREQUENCY):
                 continue
             elif (zipped[i][1] - zipped[i-1][1] > 0):  # Threshold for a new group
                 groups.append(current_group)
@@ -164,19 +156,9 @@ class Tuner():
         return averages
 
     def collect_samples(self):
-        audio_data = fromstring(self.stream.read(Values.NUM_SAMPLES,exception_on_overflow=False), dtype=short)
-        self.buffer.put(audio_data)
-        
-    async def set_awaiting(self, notes):
-        self.awaiting = True
-        while True:
-            if len(self.notes) != 0 and self.notes.issubset(notes):
-                break
-            await asyncio.sleep(0)
-        self.awaiting = False
-    
-    def is_awaiting(self):
-        return self.awaiting
+        while self.running:
+            audio_data = fromstring(self.stream.read(Values.NUM_SAMPLES, exception_on_overflow=False), dtype=short)
+            self.buffer.put(audio_data)
 
     def process_samples(self):
         audio_samples = []
@@ -184,90 +166,63 @@ class Tuner():
         temp = []
         right = False
         started = False
-        prev_note = None
-        time_played = None
-        #while self.running or not self.buffer.empty():
-        if self.buffer.empty():
-            self.collect_samples()
-            self.notes = set()
-        if not self.buffer.empty():
-            audio_samples.append(self.buffer.get_nowait())
-            if len(audio_samples) == self.SAMPLES_FOR_AVERAGE:
-                if started:
-                    count += 1
-                vals_right = self.get_frequency_from_samples_right(audio_samples)
-                vals_left = self.get_frequency_from_samples_left(audio_samples)
-                audio_samples = []
-                vals = None
-                side = None
-                if len(vals_left) != 0:
-                    vals = vals_left
-                    side = "left"
-                    right = False
-                else:
-                    vals = vals_right
-                    side = "right"
-                    right = True
-                if(vals != None and len(vals) != 0):
-                    for val in vals:
-                        detected_note = frequency_to_note(val[0])
-                        if(right == True) and (count <= self.WAIT_CYCLE_TIME):
-                                temp.append((detected_note,val[1]))
-                                #print(detected_note)
-                                #print("time",time.time())
-                                #print("frequency",val[0])
-                                #print("intensity",val[1])
+        while self.running or not self.buffer.empty():
+            if not self.buffer.empty():
+                audio_samples.append(self.buffer.get_nowait())
+                if len(audio_samples) == self.SAMPLES_FOR_AVERAGE:
+                    if started:
+                        count += 1
+                    vals_right = self.get_frequency_from_samples_right(audio_samples)
+                    vals_left = self.get_frequency_from_samples_left(audio_samples)
+                    audio_samples = []
+                    vals = None
+                    side = None
+                    if len(vals_left) != 0:
+                        vals = vals_left
+                        side = "left"
+                        right = False
+                    else:
+                        vals = vals_right
+                        side = "right"
+                        right = True
+                    if(vals != None and len(vals) != 0):
+                        for val in vals:
+                            detected_note = frequency_to_note(val[0])
+                            if(right == True) and (count <= self.WAIT_CYCLE_TIME):
+                                temp.append((detected_note,time.time()))
                                 started = True
-                                prev_note = detected_note
-                                time_played = time.time()
-                        elif(right == False):
-                                #if prev_note != note or (prev_note == note and time.time()-time_played > 1):
-                                    self.results.append(detected_note)
-                                    #self.detected_key = note
-                                    self.stale= True
-                                    self.detected_note = detected_note 
-                                    prev_note = detected_note
-                                    time_played = time.time()
-                                    self.notes = set()
-                                    self.notes.add(detected_note)
-                                
-                if count >=self.WAIT_CYCLE_TIME and len(temp) != 0:
-                    for note,t in temp:
-#                           # print("note detected "+note+" by right" )
-#                           #print(t)
-                        #if prev_note != note or (prev_note == note and time.time()-time_played > 1):
-                        self.results.append(note)
-                            #self.detected_key = note
-                        self.stale= True
-                        self.detected_note = note 
-                        prev_note = note
-                        time_played = time.time()
-                        self.notes = set()
-                        self.notes.add(note)
-                            
-                    temp = []
-                    count = 0
-                    started = False
-                    self.buffer.task_done()
+                            elif(right == False):
+                                print("note detected "+detected_note+" by "+side+" ")
+                                self.results.append(detected_note)
+                                self.mapped_results
+                                temp = []
+                                started = False
+                                count = 0
+                    if count >=self.WAIT_CYCLE_TIME and len(temp) != 0:
+                        for note,t in temp:
+                            print("note detected "+note+" by right" )
+                            print(t)
+                            self.results.append(note)
+                        temp = []
+                        count = 0
+                        started = False
+                        self.buffer.task_done()
 
+    def start(self):
+        t_collect = threading.Thread(target=self.collect_samples)
+        t_process = threading.Thread(target=self.process_samples)
+        t_collect.start()
+        t_process.start()
+        t_collect.join()
+        t_process.join()
 
+    def stop(self):
+        self.running = False
+        self.stream.stop_stream()
+        self.stream.close()
+        self.pa.terminate()
     def clear(self):
         self.results = deque()
-        
-    def stop(self):
-        if self.running:
-            self.stream.stop_stream()
-            self.running = False
-
-    def get_notes(self):
-        if self.notes == None:
-            return set()
-        return self.notes
-    
-    def start(self):
-        if not self.running:
-            self.stream.start_stream()
-            self.running = True
 # frequency_to_note function and NotesHz class remain unchanged
 def frequency_to_note(frequency):
     notes = {
@@ -321,12 +276,13 @@ def frequency_to_note(frequency):
 
     return(notes[closest_note])
 
-"""Mic = Tuner(1,115,75,30,10,40,120,0)
-while True:
-    Mic.process_samples()
-    if len(Mic.get_notes()) != 0:
-        print("THese are the detected notes",Mic.get_notes())
-        """
-
-
-
+if __name__ == "__main__":
+    #Mic for game 1(SONATA SPARROW)
+    tuner = Tuner(1,115,75,30,10,40,120,0) 
+    #tuner = Tuner(2,115,75,30,10,40,120,2)
+    #tuner = Tuner(1,115,75,30,5,40,120,0) 
+    try:
+        tuner.start()
+    except KeyboardInterrupt:
+        tuner.stop()
+        print("Program stopped.")
