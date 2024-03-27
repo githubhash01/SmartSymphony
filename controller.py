@@ -45,16 +45,16 @@ class Controller:
                             self.hardware[hand].start_note(event.key, hand)
                         elif event.event_type == 0:
                             self.hardware[hand].stop_note(event.key, hand)
+                notes = set()
                 for hand in events:
                     if not self.hardware[hand]:
                         continue
                     if self.feedback[hand]:
-                        notes = set()
                         for event in events[hand]:
                             if event.event_type == 1:
                                 notes.add(event.key.note)
-                        if len(notes) > 0:
-                            await self.microphone.set_awaiting(notes)
+                if len(notes) > 0:
+                    await self.microphone.set_awaiting(notes)
                 await self.timeline.wait()
         except Exception as e:
             print(e)
