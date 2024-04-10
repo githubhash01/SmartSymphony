@@ -17,15 +17,15 @@ class Actuators:
         self.stop()
     
     def start_note(self, key, hand=None):
-        GPIO.output(key.actuator, GPIO.HIGH)
+        GPIO.output(self.motorPins[key.actuator], GPIO.HIGH)
     
     def stop_note(self, key, hand=None):
-        GPIO.output(key.actuator, GPIO.LOW)
+        GPIO.output(self.motorPins[key.actuator], GPIO.LOW)
     
     async def play_note(self, key, length):
         try:
-            GPIO.output(key.actuator, GPIO.HIGH)
+            GPIO.output(self.motorPins[key.actuator], GPIO.HIGH)
             await asyncio.sleep(length)
-            GPIO.output(key.actuator, GPIO.LOW)
+            GPIO.output(self.motorPins[key.actuator], GPIO.LOW)
         except Exception as e:
             print(e)

@@ -5,11 +5,15 @@ import websockets
 import requests
 import base64
 import io
-from lightstrip import Lightstrip
-from actuators import Actuators
+#from lightstrip import Lightstrip
+from virtual_lightstrip import VirtualLightstrip
+#from actuators import Actuators
+from virtual_actuators import VirtualActuators
 from controller import Controller
 from keys import Key
 from VariableMicrophone import Tuner
+
+from virtual_keyboard import VirtualKeyboard
 
 this_module = sys.modules[__name__]
 
@@ -18,10 +22,11 @@ this_module = sys.modules[__name__]
 # an IP with a port. make sure to change
 # it when you boot up the website to the
 # website IP!.
-BaseURL = "http://172.24.53.168:5000"
+BaseURL = "http://192.168.0.162:5000"
 
-lightstrip = Lightstrip()
-actuators = Actuators()
+virtual_keyboard = VirtualKeyboard()
+lightstrip = VirtualLightstrip(virtual_keyboard)
+actuators = VirtualActuators(virtual_keyboard)
 microphone = Tuner(1, 115, 75, 30, 10, 40, 120, 0) 
 controller = Controller(microphone)
 
@@ -146,11 +151,10 @@ def cmd_set_hardware(client, info):
     controller.set_feedback(info["hand"], feedback)
     controller.set_hardware(info["hand"], hardware)
     
-def cmd_set_midi(client, info):
-    info = json.loads(info)
-    left_midi_file = io.BytesIO(base64.b64decode(info["left"]))
-    right_midi_file = io.BytesIO(base64.b64decode(info["right"]))
-    controller.set_midi(left_midi_file, right_midi_file)
+def cmd_set_midi(client, midi):
+    midi = base64.b64decode(midi)
+    midi_file = io.BytesIO(midi)
+    controller.set_midi(midi_file)
 
 def cmd_listen(client, listening):
     cm.set_listening(client, listening)
@@ -230,6 +234,7 @@ async def measure_microphone():
         
 async def main():
     asyncio.create_task(measure_microphone())
+    asyncio.create_task(virtual_keyboard.update())
     async with websockets.serve(handler, "", 8001):
         await asyncio.Future()
 

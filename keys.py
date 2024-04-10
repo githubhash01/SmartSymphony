@@ -48,7 +48,7 @@ class Key:
             return -1
     
     def get_actuator(self):
-        note_to_actuator_dict = {'C' : 23, 'C#' : 12, 'D' : 22, 'D#' : 13, 'E' : 25, 'F' : 24, 'F#' : 6, 'G' : 5, 'G#' : 16, 'A' : 26, 'A#' : 17, 'B' : 27}
+        note_to_actuator_dict = {'C' : 0, 'C#' : 1, 'D' : 2, 'D#' : 3, 'E' : 4, 'F' : 5, 'F#' : 6, 'G' : 7, 'G#' : 8, 'A' : 9, 'A#' : 10, 'B' : 11}
         note = self.note[:-1]
         return note_to_actuator_dict.get(note)
 

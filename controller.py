@@ -17,8 +17,8 @@ class Controller:
     def set_feedback(self, hand, feedback):
         self.feedback[hand] = feedback
 
-    def set_midi(self, left_midi_file, right_midi_file):
-        self.timeline = Timeline(left_midi_file, right_midi_file)
+    def set_midi(self, midi_file):
+        self.timeline = Timeline(midi_file)
         self.timeline.seek(self.time)
         self.timeline.set_speed(self.speed)
     
@@ -75,15 +75,19 @@ class Controller:
         return True
 
     def stop(self):
-        if self.hardware["left"]:
-            self.hardware["left"].stop()
-        if self.hardware["right"]:
-            self.hardware["right"].stop()
+        left_hardware = self.hardware["left"]
+        if left_hardware:
+            left_hardware.stop()
+        right_hardware = self.hardware["left"]
+        if right_hardware and right_hardware != left_hardware:
+            right_hardware.stop()
         return self.internal_stop()
     
     def pause(self):
-        if self.hardware["left"]:
-            self.hardware["left"].pause()
-        if self.hardware["right"]:
-            self.hardware["right"].pause()
+        left_hardware = self.hardware["left"]
+        if left_hardware:
+            left_hardware.pause()
+        right_hardware = self.hardware["left"]
+        if right_hardware and right_hardware != left_hardware:
+            right_hardware.pause()
         return self.internal_stop()
