@@ -4,7 +4,7 @@ import asyncio
 class VirtualKeyboard:
     def __init__(self):
         self.p = Popen(["VirtualPiano.exe"], shell=True, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-        self.messages = []
+        self.message = ""
     
     def __del__(self):
         self.p.kill()
@@ -20,24 +20,30 @@ class VirtualKeyboard:
     
     async def update(self):
         while True:
-            self.messages.append("\n")
-            for message in self.messages:
-                message_bytes = bytes(message, "UTF-8")
-                self.p.stdin.write(message_bytes)
+            if self.message != "":
+                self.message = self.message[:-1] + "\n"
+            else:
+                self.message = "\n"
+            message_bytes = bytes(self.message, "UTF-8")
+            self.p.stdin.write(message_bytes)
+            if (self.message != "\n"):
+                print(self.message)
             self.p.stdin.flush()
             self.p.stdout.flush()
-            self.messages = []
+            self.message = ""
             await asyncio.sleep(0.01)
     
     def press_key(self, key, hand):
-        self.messages.append(f"p {key.key_num - 21} {self.get_hand_index(hand)},")
+        self.message += f"p {key.key_num - 21} {self.get_hand_index(hand)},"
     
     def unpress_key(self, key):
-        self.messages.append(f"p {key.key_num - 21} {0},")
+        self.message += f"p {key.key_num - 21} {0},"
     
     def indicate_key(self, key, hand, colour):
+        print(colour)
+        print(self.get_hand_index(hand))
         r, g, b, _ = colour
-        self.messages.append(f"i {key.key_num - 21} {self.get_hand_index(hand)} {r} {g} {b},")
+        self.message += f"i {key.key_num - 21} {self.get_hand_index(hand)} {r} {g} {b},"
     
     def unindicate_key(self, key):
-        self.messages.append(f"i {key.key_num - 21} {0},")
+        self.message += f"i {key.key_num - 21} {0},"
