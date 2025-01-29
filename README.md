@@ -1,7 +1,7 @@
 # Robotic Piano Accompaniment System
 
 > **📌 Note:** This project was originally developed as a **group project** as part of the **System Design Project** at **Edinburgh University**.  
-> The original repository can be found at: [Original Repository]([(https://github.com/lukenoonen/SmartSymphonyHardware.git)).  
+> The original repository can be found at: [(https://github.com/lukenoonen/SmartSymphonyHardware.git)]  
 > This repository highlights my **individual contributions** to the project.
 
 ## Overview
