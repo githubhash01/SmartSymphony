@@ -1,7 +1,11 @@
 # Robotic Piano Accompaniment System
 
+> **📌 Note:** This project was originally developed as a **group project** as part of the **System Design Project** at **Edinburgh University**.  
+> The original repository can be found at: [Original Repository]([(https://github.com/lukenoonen/SmartSymphonyHardware.git)).  
+> This repository highlights my **individual contributions** to the project.
+
 ## Overview
-This project was developed as part of the **System Design Project** at [Your University Name]. The aim was to design and implement a robotic system that assists new piano learners by providing real-time accompaniment, visual guidance, and feedback.
+This group project was developed as part of the **System Design Project** at University of Edinburgh The aim was to design and implement a robotic system that assists new piano learners by providing real-time accompaniment, visual guidance, and feedback.
 
 The system integrates multiple hardware components and software functionalities to create an interactive learning experience. It includes a robotic piano that plays an octave to accompany learners, an LED strip for note guidance, and a microphone to provide feedback based on the learner's performance. Additionally, a web app allows users to upload sheet music, which is processed into hardware instructions to drive the robotic system.
 
